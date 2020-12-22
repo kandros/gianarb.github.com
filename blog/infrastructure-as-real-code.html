@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Infrastructure as (real) code</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Infrastructure as code today is wrong. Tools like Chef, Helm, Salt, Ansible uses a template engine to make YAML or JSON way to smarter, but comparing this solution with a proper coding language you always miss something. GitOps forces you to stick your infrastructure code in a git repository this is good. But infrastructure as code is way more.">
+    <meta name="keywords" content="devops, infrastructure as code, kubernetes, golang, yaml, ansible, chef, puppet, salt, helm">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/infrastructure-as-real-code">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Infrastructure as (real) code">
+    <meta name='twitter:description' content="Infrastructure as code today is wrong. Tools like Chef, Helm, Salt, Ansible uses a template engine to make YAML or JSON way to smarter, but comparing this solution with a proper coding language you always miss something. GitOps forces you to stick your infrastructure code in a git repository this is good. But infrastructure as code is way more.">
+
+    <meta property="og:title" content="Infrastructure as (real) code" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/infrastructure-as-real-code" />
+    <meta property="og:description" content="Infrastructure as code today is wrong. Tools like Chef, Helm, Salt, Ansible uses a template engine to make YAML or JSON way to smarter, but comparing this solution with a proper coding language you always miss something. GitOps forces you to stick your infrastructure code in a git repository this is good. But infrastructure as code is way more." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+
+    <meta property="og:image" content="" />
+    <meta name='twitter:image' content="https://gianarb.it/img/hero/infra-as-code.jpeg">
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Infrastructure as (real) code">
+    <meta name="twitter:description" content="Infrastructure as code today is wrong. Tools like Chef, Helm, Salt, Ansible uses a template engine to make YAML or JSON way to smarter, but comparing this solution with a proper coding language you always miss something. GitOps forces you to stick your infrastructure code in a git repository this is good. But infrastructure as code is way more.">
+    <meta name="twitter:image:src" content="https://gianarb.it">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+<style>
+.bgimage {
+  background-image: url('/img/hero/infra-as-code.jpeg');
+}
+</style>
+<section class="bgimage">
+</section>
+
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Infrastructure as (real) code</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">31 Dec 2018 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">10 minute read</span>
+ · devops, infrastructure as code, kubernetes, golang, yaml, ansible, chef, puppet, salt, helm</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>I got different signals from the internet around the topic infrastructure as
+code. I worked with a lot of configuration management tools: Chef, Ansible,
+Salt. All of them are good and bad almost in the same way, for me it is mainly a
+boring syntax switch between them. That’s one of the reasons I have a repulsion
+for these kind of tools.  This year at InfluxData we moved to Kubernetes, and I
+had the chance to see how a migration like that works, and the unique
+privileges to work with my collagues to design how the end result looks
+like, even if it is a never ending work in progress based on the feedback
+that we get from outself and other teams.  So I think at this point I can
+try to explain why I think infrastructure as code today doesn’t work.</p>
+
+<blockquote class="twitter-tweet tw-align-center" data-lang="en"><p lang="en" dir="ltr">I’m
+starting to think the industry didn’t get the point of “infrastructure as code”.
+That people believe codified infrastructure is checking YAMLs into a git repo is
+troubling.</p>&mdash; Dan Woods (@danveloper) <a href="https://twitter.com/danveloper/status/1078870433246662656?ref_src=twsrc%5Etfw">December
+29, 2018</a></blockquote>
+<script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<p>Configuration management are not entirely useless, but it is like <a href="https://sizovs.net/2018/12/17/stop-learning-frameworks/">learning a
+new framework</a>, there
+is always something good to learn but it is just a framework.  If you pick the
+cooler Javascript one, you will probably get a well-paid job in a startup with
+candies and a flexible workplace but I am always interested in learning the
+underline architecture and patterns. The reconciliation loop that ReactJS built
+to interact with the DOM is pretty nice, or the one that Kubernetes has to
+manage all the resources.  Architecture, design patterns are well more useful
+that syntactic sure that you can get from the framework itself even more when
+the “sugar” looks like this:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s2">"</span><span class="s">(Install:</span><span class="nv"> </span><span class="s">All</span><span class="nv"> </span><span class="s">OSs)</span><span class="nv"> </span><span class="s">Install</span><span class="nv"> </span><span class="s">NGINX</span><span class="nv"> </span><span class="s">Open</span><span class="nv"> </span><span class="s">Source</span><span class="nv"> </span><span class="s">Perl</span><span class="nv"> </span><span class="s">Module"</span>
+  <span class="na">package</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">nginx-module-perl</span>
+    <span class="na">state</span><span class="pi">:</span> <span class="s">present</span>
+  <span class="na">when</span><span class="pi">:</span> <span class="s">nginx_type == "opensource"</span>
+<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s2">"</span><span class="s">(Install:</span><span class="nv"> </span><span class="s">All</span><span class="nv"> </span><span class="s">OSs)</span><span class="nv"> </span><span class="s">Install</span><span class="nv"> </span><span class="s">NGINX</span><span class="nv"> </span><span class="s">Plus</span><span class="nv"> </span><span class="s">Perl</span><span class="nv"> </span><span class="s">Module"</span>
+  <span class="na">package</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">nginx-plus-module-perl</span>
+    <span class="na">state</span><span class="pi">:</span> <span class="s">present</span>
+  <span class="na">when</span><span class="pi">:</span> <span class="s">nginx_type == "plus"</span>
+<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s2">"</span><span class="s">(Setup:</span><span class="nv"> </span><span class="s">All</span><span class="nv"> </span><span class="s">NGINX)</span><span class="nv"> </span><span class="s">Load</span><span class="nv"> </span><span class="s">NGINX</span><span class="nv"> </span><span class="s">Perl</span><span class="nv"> </span><span class="s">Module"</span>
+  <span class="na">lineinfile</span><span class="pi">:</span>
+    <span class="na">path</span><span class="pi">:</span> <span class="s">/etc/nginx/nginx.conf</span>
+    <span class="na">insertbefore</span><span class="pi">:</span> <span class="s">BOF</span>
+    <span class="na">line</span><span class="pi">:</span> <span class="s">load_module modules/ngx_http_perl.so;</span>
+  <span class="na">notify</span><span class="pi">:</span> <span class="s2">"</span><span class="s">(Handler:</span><span class="nv"> </span><span class="s">All</span><span class="nv"> </span><span class="s">OSs)</span><span class="nv"> </span><span class="s">Reload</span><span class="nv"> </span><span class="s">NGINX"</span>
+</code></pre></div></div>
+
+<p>The above code is an Ansible script that I took from a randomly from the <a href="https://github.com/nginxinc/ansible-role-nginx/blob/master/tasks/modules/install-perl.yml">nginx
+role</a></p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">piVersion</span><span class="pi">:</span> <span class="s">extensions/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Deployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">template "drone.fullname" .</span> <span class="pi">}</span><span class="err">}</span><span class="s">-agent</span>
+  <span class="na">labels</span><span class="pi">:</span>
+    <span class="na">app</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">template "drone.name" .</span> <span class="pi">}</span><span class="err">}</span>
+    <span class="na">chart</span><span class="pi">:</span> <span class="s2">"</span><span class="s">{</span><span class="nv"> </span><span class="s">.Chart.Name</span><span class="nv"> </span><span class="s">}}-{</span><span class="nv"> </span><span class="s">.Chart.Version</span><span class="nv"> </span><span class="s">}}"</span>
+    <span class="na">release</span><span class="pi">:</span> <span class="s2">"</span><span class="s">{</span><span class="nv"> </span><span class="s">.Release.Name</span><span class="nv"> </span><span class="s">}}"</span>
+    <span class="na">heritage</span><span class="pi">:</span> <span class="s2">"</span><span class="s">{</span><span class="nv"> </span><span class="s">.Release.Service</span><span class="nv"> </span><span class="s">}}"</span>
+    <span class="na">component</span><span class="pi">:</span> <span class="s">agent</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">replicas</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">.Values.agent.replicas</span> <span class="pi">}</span><span class="err">}</span>
+  <span class="na">template</span><span class="pi">:</span>
+    <span class="na">metadata</span><span class="pi">:</span>
+      <span class="na">annotations</span><span class="pi">:</span>
+        <span class="s">checksum/secrets</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">include (print $.Template.BasePath "/secrets.yaml") . | sha256sum</span> <span class="pi">}</span><span class="err">}</span>
+<span class="pi">{</span><span class="nv">- if .Values.agent.annotations</span> <span class="pi">}</span>
+<span class="pi">{</span> <span class="nv">toYaml .Values.agent.annotations | indent 8</span> <span class="pi">}</span>
+<span class="pi">{</span><span class="nv">- end</span> <span class="pi">}</span>
+      <span class="na">labels</span><span class="pi">:</span>
+        <span class="na">app</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">template "drone.name" .</span> <span class="pi">}</span><span class="err">}</span>
+        <span class="na">release</span><span class="pi">:</span> <span class="s2">"</span><span class="s">{</span><span class="nv"> </span><span class="s">.Release.Name</span><span class="nv"> </span><span class="s">}}"</span>
+        <span class="na">component</span><span class="pi">:</span> <span class="s">agent</span>
+</code></pre></div></div>
+
+<p>This is an help chart I took from the <a href="https://github.com/helm/charts/blob/master/stable/drone/templates/deployment-agent.yaml">official GitHub
+repository</a>.</p>
+
+<p>To be clear, when I imagine a sweet dessert full of sugar it is way different
+compared with what I have pasted above.</p>
+
+<p>Both of them work with a template engine that is capable of rendering a template
+that looks like YAML.  I will never buy that infrastructure as code doesn’t use
+the real code but a serialization language.</p>
+
+<p>If you don’t know why YAML or JSON or HCL these are a set of reasons that you
+will hear:</p>
+
+<ul>
+  <li>The curve to learn YAML, JSON, HCL is way more friendly than a proper language
+like Go, Javascript, PHP or whatever.</li>
+  <li>You don’t have all the utilities that a language provides but only what the
+template engine exposes. This should help you and your team to avoid terrible
+mistakes.</li>
+</ul>
+
+<p>These concerns was reasonably at the beginning, when the DevOps culture started,
+but now everyone has a good sense of how to code.  We do code review, and we
+have a lot more experience around patterns and API to handle infrastructure
+provisioning.</p>
+
+<ol>
+  <li>If you know Kubernetes, it has powerful API that you can leverage to write
+automation code, same for cloud provider like AWS, GCP or OpenStack.</li>
+  <li>Reconciliation loop, informer, Workqueue, Controller and CRDs are concepts
+from Kubernetes that you can reuse.</li>
+  <li>I wrote about <a href="https://gianarb.it/blog/reactive-planning-is-a-cloud-native-pattern">reactive
+planning</a>
+and its application in cloud.</li>
+</ol>
+
+<blockquote class="twitter-tweet tw-align-center" data-lang="en"><p lang="en" dir="ltr">if people refuse to learn things, fire them.<br />if your management won&#39;t fire people for not pulling their weight, quit.<br /><br />ENGINEERS: we live in a golden age of opportunity.  please use it while it lasts. <a href="https://t.co/OdB24UNl9X">https://t.co/OdB24UNl9X</a></p>&mdash; Charity Majors (@mipsytipsy) <a href="https://twitter.com/mipsytipsy/status/1078799382009470979?ref_src=twsrc%5Etfw">December 28, 2018</a></blockquote>
+<script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<p>All the concerns that I raised in favor of <code class="highlighter-rouge">YAML, JSON vs. code</code> drives to the
+risk of writing bad code, but I think there is no way to “remove bad code.” Even
+code that looks good today will look bad tomorrow.  Find a way to mitigate the
+risk is admirable but I don’t think YAML is the right solution, a code
+architecture, the right patterns, testing, documentation and code review are the
+way to go.</p>
+
+<p>Today therea are people with the right skills to write good code even around
+infrastructure, and if you use real code you will have:</p>
+
+<ul>
+  <li>A reacher set of libraries and tools based on the language that you will pick.</li>
+  <li>Unit, integration test frameworks.</li>
+  <li>Compiling or interpreting an actual language will highlight more syntax errors
+that every template engine.</li>
+  <li>Code is way more fun!</li>
+  <li>You can import your code and you don’t need to make trick things to join
+Kubernetes template together</li>
+  <li>You can instantiate new objects, apply transformations of them from the same
+structure to reuse the code that describes your resources (aws autoscaling
+group, kubernetes ingress or whatever).</li>
+</ul>
+
+<p>This discussion applied to a real word situation with Kubernetes used not via
+YAML but with the Go struct provided by the
+<a href="https://github.com/kubernetes/client-go/tree/master/kubernetes/typed/core/v1">kubernetes/client-go</a></p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiversion</span><span class="pi">:</span> <span class="s">apps/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">deployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">micro</span>
+  <span class="na">namespace</span><span class="pi">:</span> <span class="s">micro</span>
+  <span class="na">labels</span><span class="pi">:</span>
+    <span class="na">app</span><span class="pi">:</span> <span class="s">micro</span>
+    <span class="na">component</span><span class="pi">:</span> <span class="s">micro</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">replicas</span><span class="pi">:</span> <span class="s">12</span>
+  <span class="na">selector</span><span class="pi">:</span>
+    <span class="na">matchlabels</span><span class="pi">:</span>
+      <span class="na">app</span><span class="pi">:</span> <span class="s">micro</span>
+  <span class="na">template</span><span class="pi">:</span>
+    <span class="na">metadata</span><span class="pi">:</span>
+      <span class="na">labels</span><span class="pi">:</span>
+        <span class="na">app</span><span class="pi">:</span> <span class="s">micro</span>
+    <span class="na">spec</span><span class="pi">:</span>
+      <span class="na">containers</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">microapp</span>
+        <span class="na">image</span><span class="pi">:</span> <span class="s">gianarb/micro</span>
+        <span class="na">ports</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">containerport</span><span class="pi">:</span> <span class="s">8080</span>
+        <span class="na">env</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">SLACK_TOKEN</span>
+          <span class="na">valuefrom</span><span class="pi">:</span>
+            <span class="na">secretkeyref</span><span class="pi">:</span>
+              <span class="na">name</span><span class="pi">:</span> <span class="s">slack</span>
+              <span class="na">key</span><span class="pi">:</span> <span class="s">token</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">SLACK_USERNAME</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s2">"</span><span class="s">myuser'</span>
+        <span class="s">resources:</span>
+          <span class="s">limits:</span>
+            <span class="s">memory:</span><span class="nv"> </span><span class="s">128mi</span>
+          <span class="s">requests:</span>
+            <span class="s">memory:</span><span class="nv"> </span><span class="s">100mi</span>
+</code></pre></div></div>
+
+<p>This YAML translated to Golang:</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span><span class="x"> </span><span class="n">newMicroDeployment</span><span class="p">()</span><span class="x"> </span><span class="o">*</span><span class="n">appsv1</span><span class="o">.</span><span class="n">Deployment</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="o">&amp;</span><span class="n">appsv1</span><span class="o">.</span><span class="n">Deployment</span><span class="p">{</span><span class="x">
+        </span><span class="n">TypeMeta</span><span class="o">:</span><span class="x"> </span><span class="n">metav1</span><span class="o">.</span><span class="n">TypeMeta</span><span class="p">{</span><span class="x">
+            </span><span class="n">Kind</span><span class="o">:</span><span class="x">       </span><span class="s">"Deployment"</span><span class="p">,</span><span class="x">
+            </span><span class="n">APIVersion</span><span class="o">:</span><span class="x"> </span><span class="s">"apps/v1"</span><span class="p">,</span><span class="x">
+        </span><span class="p">},</span><span class="x">
+        </span><span class="n">ObjectMeta</span><span class="o">:</span><span class="x"> </span><span class="n">metav1</span><span class="o">.</span><span class="n">ObjectMeta</span><span class="p">{</span><span class="x">
+            </span><span class="n">Name</span><span class="o">:</span><span class="x">      </span><span class="s">"micro"</span><span class="p">,</span><span class="x">
+            </span><span class="n">Namespace</span><span class="o">:</span><span class="x"> </span><span class="n">twodotoh</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span><span class="x">
+            </span><span class="n">Labels</span><span class="o">:</span><span class="x"> </span><span class="k">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="x">
+                </span><span class="s">"app"</span><span class="o">:</span><span class="x">       </span><span class="s">"micro"</span><span class="p">,</span><span class="x">
+                </span><span class="s">"component"</span><span class="o">:</span><span class="x"> </span><span class="s">"micro"</span><span class="p">,</span><span class="x">
+            </span><span class="p">},</span><span class="x">
+        </span><span class="p">},</span><span class="x">
+        </span><span class="n">Spec</span><span class="o">:</span><span class="x"> </span><span class="n">appsv1</span><span class="o">.</span><span class="n">DeploymentSpec</span><span class="p">{</span><span class="x">
+            </span><span class="n">Replicas</span><span class="o">:</span><span class="x"> </span><span class="n">pointer</span><span class="o">.</span><span class="n">Int32Ptr</span><span class="p">(</span><span class="m">12</span><span class="p">),</span><span class="x">
+            </span><span class="n">Selector</span><span class="o">:</span><span class="x"> </span><span class="o">&amp;</span><span class="n">metav1</span><span class="o">.</span><span class="n">LabelSelector</span><span class="p">{</span><span class="x">
+                </span><span class="n">MatchLabels</span><span class="o">:</span><span class="x"> </span><span class="k">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="x">
+                    </span><span class="s">"app"</span><span class="o">:</span><span class="x"> </span><span class="s">"micro"</span><span class="p">,</span><span class="x">
+                </span><span class="p">},</span><span class="x">
+            </span><span class="p">},</span><span class="x">
+            </span><span class="n">Template</span><span class="o">:</span><span class="x"> </span><span class="n">corev1</span><span class="o">.</span><span class="n">PodTemplateSpec</span><span class="p">{</span><span class="x">
+                </span><span class="n">ObjectMeta</span><span class="o">:</span><span class="x"> </span><span class="n">metav1</span><span class="o">.</span><span class="n">ObjectMeta</span><span class="p">{</span><span class="x">
+                    </span><span class="n">Labels</span><span class="o">:</span><span class="x"> </span><span class="k">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="x">
+                        </span><span class="s">"app"</span><span class="o">:</span><span class="x"> </span><span class="s">"micro"</span><span class="p">,</span><span class="x">
+                    </span><span class="p">},</span><span class="x">
+                </span><span class="p">},</span><span class="x">
+                </span><span class="n">Spec</span><span class="o">:</span><span class="x"> </span><span class="n">corev1</span><span class="o">.</span><span class="n">PodSpec</span><span class="p">{</span><span class="x">
+                    </span><span class="n">Containers</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="n">corev1</span><span class="o">.</span><span class="n">Container</span><span class="p">{</span><span class="x">
+                        </span><span class="p">{</span><span class="x">
+                            </span><span class="n">Name</span><span class="o">:</span><span class="x">  </span><span class="s">"microapp"</span><span class="p">,</span><span class="x">
+                            </span><span class="n">Image</span><span class="o">:</span><span class="x"> </span><span class="s">"gianarb/micro"</span><span class="p">,</span><span class="x">
+                            </span><span class="n">Ports</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="n">corev1</span><span class="o">.</span><span class="n">ContainerPort</span><span class="p">{</span><span class="x">
+                                </span><span class="p">{</span><span class="x">
+                                    </span><span class="n">ContainerPort</span><span class="o">:</span><span class="x"> </span><span class="m">8080</span><span class="p">,</span><span class="x">
+                                </span><span class="p">},</span><span class="x">
+                            </span><span class="p">},</span><span class="x">
+                            </span><span class="n">Env</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="n">corev1</span><span class="o">.</span><span class="n">EnvVar</span><span class="p">{</span><span class="x">
+                                </span><span class="p">{</span><span class="x">
+                                    </span><span class="n">Name</span><span class="o">:</span><span class="x"> </span><span class="s">"SLACK_TOKEN"</span><span class="p">,</span><span class="x">
+                                    </span><span class="n">ValueFrom</span><span class="o">:</span><span class="x"> </span><span class="o">&amp;</span><span class="n">corev1</span><span class="o">.</span><span class="n">EnvVarSource</span><span class="p">{</span><span class="x">
+                                        </span><span class="n">SecretKeyRef</span><span class="o">:</span><span class="x"> </span><span class="o">&amp;</span><span class="n">corev1</span><span class="o">.</span><span class="n">SecretKeySelector</span><span class="p">{</span><span class="x">
+                                            </span><span class="n">LocalObjectReference</span><span class="o">:</span><span class="x"> </span><span class="n">corev1</span><span class="o">.</span><span class="n">LocalObjectReference</span><span class="p">{</span><span class="x">
+                                                </span><span class="n">Name</span><span class="o">:</span><span class="x"> </span><span class="s">"slack"</span><span class="p">,</span><span class="x">
+                                            </span><span class="p">},</span><span class="x">
+                                            </span><span class="n">Key</span><span class="o">:</span><span class="x"> </span><span class="s">"token"</span><span class="p">,</span><span class="x">
+                                        </span><span class="p">},</span><span class="x">
+                                    </span><span class="p">},</span><span class="x">
+                                </span><span class="p">},</span><span class="x">
+                                </span><span class="p">{</span><span class="x">
+                                    </span><span class="n">Name</span><span class="o">:</span><span class="x">  </span><span class="s">"SLACK_USERNAME"</span><span class="p">,</span><span class="x">
+                                    </span><span class="n">Value</span><span class="o">:</span><span class="x"> </span><span class="s">"myuser"</span><span class="p">,</span><span class="x">
+                                </span><span class="p">},</span><span class="x">
+                            </span><span class="p">},</span><span class="x">
+                        </span><span class="p">},</span><span class="x">
+                    </span><span class="p">},</span><span class="x">
+                </span><span class="p">},</span><span class="x">
+            </span><span class="p">},</span><span class="x">
+        </span><span class="p">},</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>You can make the function more flexible passing variables like the number of
+replicas for example, or you can write transformation function that looks like
+<code class="highlighter-rouge">WithDifferentMemoryLimit</code> to apply transformation to your <code class="highlighter-rouge">runtime.Object</code>.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">deployment</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">newMicroDeployment</span><span class="p">()</span><span class="x">
+
+</span><span class="c">// You can transform them with utils like:</span><span class="x">
+</span><span class="n">WithDifferentMemoryLimit</span><span class="p">(</span><span class="s">"200mi"</span><span class="p">,</span><span class="x"> </span><span class="n">deployment</span><span class="p">)</span><span class="x">
+</span></code></pre></div></div>
+
+<p>If you play well will Go packages, and if you structure your code you can have
+something like:</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">apps</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="n">runtime</span><span class="o">.</span><span class="n">Object</span><span class="p">{}</span><span class="x">
+</span><span class="n">service</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">micro</span><span class="o">.</span><span class="n">NewKubernetesService</span><span class="p">()</span><span class="x">
+</span><span class="n">deployment</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">micro</span><span class="o">.</span><span class="n">NewDeployment</span><span class="p">()</span><span class="x">
+</span><span class="n">apps</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="nb">append</span><span class="p">(</span><span class="n">apps</span><span class="p">,</span><span class="x"> </span><span class="n">service</span><span class="p">)</span><span class="x">
+</span><span class="n">apps</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="nb">append</span><span class="p">(</span><span class="n">apps</span><span class="p">,</span><span class="x"> </span><span class="n">deployment</span><span class="p">)</span><span class="x">
+</span><span class="c">// Deploy via kubernetes api</span><span class="x">
+</span></code></pre></div></div>
+<p>I mean, you have the code now! So you can make all the mistakes you usually do
+during your daily job!</p>
+
+<p class="small">Hero image via <a href="https://pixabay.com/en/fractal-complexity-geometry-1758543/">Pixabay</a></p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/infrastructure-as-real-code';
+    this.page.identifier = 'https://gianarb.it/blog/infrastructure-as-real-code';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

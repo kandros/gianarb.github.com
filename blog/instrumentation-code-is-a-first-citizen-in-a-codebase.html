@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Instrumentation code is a first citizen in a codebase</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="How fast we are capable of instrumenting an application decrease the out of time requires to understand and fix a bug.">
+    <meta name="keywords" content="code instrumentation, library, opentracing, opencensus, opentelemetry, influxdb, prometheus, opensource, honeycomb">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/instrumentation-code-is-a-first-citizen-in-a-codebase">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Instrumentation code is a first citizen in a codebase">
+    <meta name='twitter:description' content="How fast we are capable of instrumenting an application decrease the out of time requires to understand and fix a bug.">
+
+    <meta property="og:title" content="Instrumentation code is a first citizen in a codebase" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/instrumentation-code-is-a-first-citizen-in-a-codebase" />
+    <meta property="og:description" content="How fast we are capable of instrumenting an application decrease the out of time requires to understand and fix a bug." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/gianarb.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/gianarb.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Instrumentation code is a first citizen in a codebase">
+    <meta name="twitter:description" content="How fast we are capable of instrumenting an application decrease the out of time requires to understand and fix a bug.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/gianarb.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Instrumentation code is a first citizen in a codebase</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">27 May 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Seven minute read</span>
+ · code instrumentation, library, opentracing, opencensus, opentelemetry, influxdb, prometheus, opensource, honeycomb</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>A few years ago a log was very similar to a printf statement with a message that
+in some way we’re trying to communicate to the outside the current situation of
+a specific procedure.  The format and composition of the message were not
+crucial, the main purpose was to make it easy enough to read.  A full-text
+search engine is capable of tokenizing and indexing every message for easy
+lookup and aggregation and it was enough to fix the gap between a human
+understanding log and something that a program can parse and visualize.  Cloud
+Computing and containers changed the way we architect, visualize and deploy
+software:</p>
+
+<ol>
+  <li><strong>The distribution of our applications</strong>. Compared with a more traditional
+approach our application runs in the smallest but much-replicated units
+(container, pods, ec2 and so on).</li>
+  <li><strong>The size</strong> of our application (microservices) and by consequence the
+interaction between them, over a not perfect communication layer (the
+network).</li>
+  <li>Applications come and go much more frequently because we have automation that
+takes care of the number of replicas running inside a system. They are more
+<strong>dynamic</strong> and we do not really have a stable identifier as before:
+hostnames, IPs change more often.</li>
+</ol>
+
+<p>These points increase the importance for us to get applications metrics out from
+our code because that’s the language our application speaks. We rely on them in
+order to understand what is going on.  We need to realize that logs and metrics
+have different purposes:</p>
+
+<ul>
+  <li>To understand what is going right now</li>
+  <li>To verify what happened in the past (even from a legal perspective)</li>
+  <li>To compare</li>
+</ul>
+
+<p>They are not random printf. All these purposes require methodologies and tools.
+This article will stay focused on the first point: “What is going on?” because
+it is a question I ask even to myself when I look at the system I wrote or
+manage and the answer is a real pain to retrieve.  To troubleshoot a system we
+need a very dense amount of information “almost in real time” because that’s
+when a system is broken “now” and a picture or a sample of older data in order
+to compare the current situation with something that we can define as “working”.
+We can not really use old data because our codebase changes frequently (because
+somebody told us that we can break and develop fast). So there is not a lot of
+value at looking at high-density data coming from two weeks ago where the
+codebase was different. That’s why time series databases as InfluxDB have data
+retention features built in to keep themselves clean.
+<a href="https://github.com/kapacitor/influxdb">InfluxDB</a> removes the data after a
+certain amount of time, but with
+<a href="https://github.com/influxdata/kapacitor">Kapacitor</a> you can aggregate or sample
+the data to an older retention policy in order to keep what you need in the
+database.  Back in the day, I wrote this article about <a href="https://gianarb.it/blog/what-is-distributed-tracing-opentracing-opencensus">Opentracing and
+Opencensus</a>.
+This is a follow up after another year of working around code instrumentation,
+observability, and monitoring.</p>
+
+<p>First of all both of them are vendor-neutral projects that help you instrument
+your applications without lock you with a specific provider. It doesn’t really
+need to be a bad, evil vendor. If you use the Prometheus client directly in your code,
+everywhere, you will be locked to it forever or until you will find the right
+time to move over all your codebase. But it sounds like “change your logger”:
+something you would like to do magically, one shot without wasting your time.</p>
+
+<p>OpenTracing is 100% for tracing, the problem it solves is about how to
+instrument your application to send traces. OpenCensus does the same, plus it
+also takes care of metrics.</p>
+
+<p>These two projects have a major issue, they are TWO different projects. They
+ were not smart enough to agree on the same format and it split the dev community without
+any reason, sham of you!. Good for us they will be
+<a href="https://medium.com/opentracing/merging-opentracing-and-opencensus-f0fe9c7ca6f0">merged</a>
+together at some point to something called OpenTelemetry. Finally!</p>
+
+<p>Another misunderstanding is around how tracers such as Zipkin, Jager, XRay advertise them self as
+“opentracing compatible”. When I think about “compatible” I think like a REST
+API that follow some rules, and for that reason, the SystemA is compatible with
+SystemB and you can change them transparently.</p>
+
+<p>This is not what happens with tracing infrastructure, because you need to
+remember that OpenTracing and OpenCensus play in your codebase size, it is not
+REST or nothing like that.</p>
+
+<p>Compatibility, in this case, means that the
+tracers (Zipkin, Jaeger, AWS X-Ray, NewRelic) ship an OpenTracing compatible
+library across many languages that you can change in your codebase in order to
+point your application to a different tracer without changing the
+instrumentation code you wrote.</p>
+
+<p>NB: OpenCensus has the same goal for metrics as well</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">function</span> <span class="nx">initTracer</span><span class="p">(</span><span class="nx">serviceName</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">serviceName</span><span class="p">:</span> <span class="nx">serviceName</span><span class="p">,</span>
+    <span class="na">sampler</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">type</span><span class="p">:</span> <span class="s2">"const"</span><span class="p">,</span>
+      <span class="na">param</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="na">reporter</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">agentHost</span><span class="p">:</span> <span class="s2">"jaeger-workshop"</span><span class="p">,</span>
+      <span class="na">logSpans</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="p">},</span>
+  <span class="p">};</span>
+  <span class="kd">var</span> <span class="nx">options</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">logger</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">info</span><span class="p">:</span> <span class="kd">function</span> <span class="nx">logInfo</span><span class="p">(</span><span class="nx">msg</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="nx">msg</span><span class="p">,</span> <span class="p">{</span>
+          <span class="s2">"service"</span><span class="p">:</span> <span class="s2">"tracer"</span>
+        <span class="p">})</span>
+      <span class="p">},</span>
+      <span class="na">error</span><span class="p">:</span> <span class="kd">function</span> <span class="nx">logError</span><span class="p">(</span><span class="nx">msg</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">msg</span><span class="p">,</span> <span class="p">{</span>
+          <span class="s2">"service"</span><span class="p">:</span> <span class="s2">"tracer"</span>
+        <span class="p">})</span>
+      <span class="p">},</span>
+    <span class="p">},</span>
+  <span class="p">};</span>
+  <span class="k">return</span> <span class="nx">initJaegerTracer</span><span class="p">(</span><span class="nx">config</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">tracer</span> <span class="o">=</span> <span class="nx">initTracer</span><span class="p">(</span><span class="s2">"discount"</span><span class="p">);</span>
+<span class="nx">opentracing</span><span class="p">.</span><span class="nx">initGlobalTracer</span><span class="p">(</span><span class="nx">tracer</span><span class="p">);</span>
+</code></pre></div></div>
+<p>This example comes from
+<a href="https://github.com/gianarb/shopmany/blob/end/discount/server.js">shopmany</a> a
+test e-commerce I wrote. In this case, the <code class="highlighter-rouge">tracer</code> is Jaeger, but if you need
+to change to Zipkin you can probably use
+<a href="https://github.com/DanielMSchmidt/zipkin-javascript-opentracing">zipkin-javascript-opentracing</a></p>
+
+<p>It is important to evaluate an instrumentation library like OpenCensus,
+OpenTracing, OpenTelemetry because there is a community that writes and supports
+libraries across many languages and tracers. it means that you do not really
+need to write your own library, that sounds a bit like too much!  I was very
+frustrated about the fact that these two libraries was TWO! I can’t wait to see
+how the result will look like.  How easy it is to instrument an application is a
+key value for a company like Honeycomb.io and this sounds like a good reason for
+them to have their own instrumentation library
+(<a href="https://github.com/honeycombio/beeline-go">go</a>,
+<a href="https://github.com/honeycombio/beeline-nodejs">js</a>,
+<a href="https://github.com/honeycombio/beeline-ruby">Ruby</a>), and when they started the
+ecosystem was different (it is still a mess today as you read) but I hope that
+OpenTelemetry will push everybody to just work together because understanding
+what is going in production right now is a hard, messy and amazing challenge.</p>
+
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">it is so nice to see
+how two great open source community such as <a href="https://twitter.com/InfluxDB?ref_src=twsrc%5Etfw">@InfluxDB</a> and <a href="https://twitter.com/ntop_org?ref_src=twsrc%5Etfw">@ntop_org</a> can do
+togheter. That&#39;s how we can solve observability/monitoring challanges all
+togheter <a href="https://twitter.com/Chris_Churilo?ref_src=twsrc%5Etfw">@Chris_Churilo</a></p>&mdash;
+gianarb (@GianArb) <a href="https://twitter.com/GianArb/status/1126107355895214082?ref_src=twsrc%5Etfw">May
+8, 2019</a></blockquote>
+<script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<h2 id="keep-instrumentation">Keep instrumentation</h2>
+
+<p><img src="/img/infinite-loop.png" alt="The infinite symble" /></p>
+
+<p>The ability to instrument an application fast, precisely increase your
+troubleshooting capabilities. Fast your iterate on your instrumentation code
+faster your will understand what is going on. It is not a one short exercise but
+it is something you improve everyday based on what you will learn. But your
+ability to learn depends on how well you can read the language that your
+applications exposes (let me tell you a secret, it depends on how well you
+instrument your code).</p>
+
+<p>More to read:</p>
+<ul>
+  <li><a href="https://medium.com/jaegertracing/jaeger-and-opentelemetry-1846f701d9f2">Jaeger and
+OpenTelemetry</a></li>
+  <li><a href="https://www.honeycomb.io/blog/how-are-structured-logs-different-from-events/">Structured
+logs</a></li>
+  <li><a href="https://gianarb.it/blog/logs-metrics-traces-aggregation">Logs Metrics Traces are uqually
+useless</a></li>
+</ul>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/instrumentation-code-is-a-first-citizen-in-a-codebase';
+    this.page.identifier = 'https://gianarb.it/blog/instrumentation-code-is-a-first-citizen-in-a-codebase';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

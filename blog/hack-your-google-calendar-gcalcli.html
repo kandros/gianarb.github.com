@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Hack your Google Calendar with gcalcli</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Everybody uses google calendar in a way or another and if you are a Linux with a light desktop manager such as i3 you lack on some commodities like reminders and notifications for your events. I find gcalcli a very good solution for my pain.">
+    <meta name="keywords" content="oss, gcalcli, calendar, google, linux">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/hack-your-google-calendar-gcalcli">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Hack your Google Calendar with gcalcli">
+    <meta name='twitter:description' content="Everybody uses google calendar in a way or another and if you are a Linux with a light desktop manager such as i3 you lack on some commodities like reminders and notifications for your events. I find gcalcli a very good solution for my pain.">
+
+    <meta property="og:title" content="Hack your Google Calendar with gcalcli" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/hack-your-google-calendar-gcalcli" />
+    <meta property="og:description" content="Everybody uses google calendar in a way or another and if you are a Linux with a light desktop manager such as i3 you lack on some commodities like reminders and notifications for your events. I find gcalcli a very good solution for my pain." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/gianarb.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/gianarb.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Hack your Google Calendar with gcalcli">
+    <meta name="twitter:description" content="Everybody uses google calendar in a way or another and if you are a Linux with a light desktop manager such as i3 you lack on some commodities like reminders and notifications for your events. I find gcalcli a very good solution for my pain.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/gianarb.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Hack your Google Calendar with gcalcli</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">26 Aug 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Four minute read</span>
+ · oss, gcalcli, calendar, google, linux</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>I am pretty bad with meetings. I forget about them for a lot of different
+reasons, sometime I do not show up even if few minutes earlier my mind briefly
+remembered it.</p>
+
+<p>Meetings are not my daily job, and I do not have them with a lot of different
+people: IPM with my team, one-to-one with my manager, various stand up. I can
+remember the recurrent one pretty well but it is still an annoying a useless
+exercise.</p>
+
+<p>When they are not recurrent they are usually out of my small circle of friends
+and it gets even worst because I do not like to be late or to miss it! I swear I
+am not like that in real life! I am on time and I prefer to be there earlier.</p>
+
+<p>Anyway! Ryan Betts VP Engineer at InfluxData shared a very nice CLI tools called
+<a href="https://github.com/insanum/gcalcli">gcalcli</a>. I love CLI tools as much as I
+love API! Probably a bit more because they are the perfect glue between server
+side and the best UX ever (also known as <strong>my terminal</strong>).</p>
+
+<p><img src="/img/gintonic.jpg" alt="A good gin tonic is great as close as my terminal" /></p>
+
+<p><strong>gcalcli</strong> is a lovely CLI tool that uses the Google Calendar API to help you
+to manage your Google Calendar.</p>
+
+<p>You can do a lot of things: list, search, edit, add events and even more.
+The <a href="https://github.com/insanum/gcalcli#login-information">authentication is well
+documented</a> you need to
+create a project on Google Development Platform with Calendar API access. After
+that you get your credential and you follow the link I just posted! Super easy.</p>
+
+<p>When you are logged I wrote this system unit and a timer in order to check every
+10 minutes if there are upcoming events:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Service]
+SyslogIdentifier=gcalcli-notification
+ExecStart=/usr/bin/gcalcli remind
+
+[Install]
+WantedBy=multi-user.target
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Unit]
+Description="Send notification for every meetings set for xxxxx@gmail.com"
+
+[Timer]
+OnBootSec=0min
+OnCalendar=*:0/10
+
+[Install]
+WantedBy=timers.target
+</code></pre></div></div>
+
+<p>The timer runs every 10 minutes this command <code class="highlighter-rouge">/usr/bin/gcalcli remind</code>.
+<code class="highlighter-rouge">remind</code> uses <code class="highlighter-rouge">notify-send</code> to show a lovely notification.</p>
+
+<p>I set it up for my working calendar and let me tell you it works great!
+For that reason I was looking for a way to support multiple Google account,
+because I would like to use it for my personal Google Calendar as well.</p>
+
+<p>There is a global flag for <code class="highlighter-rouge">gcalcli</code> called <code class="highlighter-rouge">--config-folder</code>, by default it set
+te none it creates a config file with credentials and preferences in your home
+directory.  If you run <code class="highlighter-rouge">gcalcli</code> with that parameter set with a different
+location:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>gcalcli <span class="nt">--config-folder</span> ~/.gcalclirc-anotheraccount list
+</code></pre></div></div>
+
+<p>The CLI won’t find the configuration file and it will proceed with a brand-new
+authentication and it will create a new file located where specified. Sweet! I
+did that trick in order to have the second Google Account configured and I have
+created a new unit and timer with the right flags and now I get notification
+from everywhere! So far so good!</p>
+
+<p>Ryan allowed me to share a script he hacked called <code class="highlighter-rouge">next</code>, I have it in my
+<code class="highlighter-rouge">bashrc</code></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>next<span class="o">()</span> <span class="o">{</span>
+    <span class="nv">datetime</span><span class="o">=</span><span class="k">$(</span>date <span class="s2">"+%Y-%m-%dT%H:%M"</span><span class="k">)</span>
+    <span class="nv">whatwhere</span><span class="o">=</span><span class="k">$(</span>gcalcli <span class="nt">--calendar</span> name-your-calendar agenda <span class="nt">--tsv</span> <span class="nt">--details</span> location <span class="nv">$datetime</span> 8pm | head <span class="nt">-n</span> 1 | awk <span class="s1">'BEGIN {FS = "\t+"} ; {print $5 " " $6}'</span><span class="k">)</span>
+
+    <span class="nv">re</span><span class="o">=</span><span class="s2">"([[:digit:]]+)"</span>
+    <span class="k">if</span> <span class="o">[[</span> <span class="nv">$whatwhere</span> <span class="o">=</span>~ <span class="nv">$re</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then
+       </span><span class="nv">room</span><span class="o">=</span><span class="s2">"zoommtg://zoom.us/join?confno=</span><span class="k">${</span><span class="nv">BASH_REMATCH</span><span class="p">[1]</span><span class="k">}</span><span class="s2">"</span>
+    <span class="k">fi
+
+    </span><span class="nb">echo</span> <span class="s2">"What: '</span><span class="nv">$whatwhere</span><span class="s2">'"</span>
+    <span class="nb">echo</span> <span class="s2">"xdg-open </span><span class="nv">$room</span><span class="s2">"</span>
+    <span class="nb">echo</span> <span class="s2">"xdg-open </span><span class="nv">$room</span><span class="s2">"</span> | clipc
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>I use Linux, he uses MacOS, so I changed the script a bit.</p>
+
+<p><code class="highlighter-rouge">xdg-open</code> to make it to work with <code class="highlighter-rouge">X</code>, <code class="highlighter-rouge">next</code> gets the next closer meeting you have in one
+particular calendar (<code class="highlighter-rouge">name-your-calendar</code> in my case) and it stores on my
+clipboard (via <code class="highlighter-rouge">clicp</code>) the command to join a zoom channel. It is super when you
+are in a hurry, you will join zoom meetings in a second.</p>
+
+<p>If you use <code class="highlighter-rouge">gcalcli</code> and you have other tricks let me know via twitter
+<a href="https://twitter.com/gianarb">@gianarb</a> because I would like to try them as well!</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/hack-your-google-calendar-gcalcli';
+    this.page.identifier = 'https://gianarb.it/blog/hack-your-google-calendar-gcalcli';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

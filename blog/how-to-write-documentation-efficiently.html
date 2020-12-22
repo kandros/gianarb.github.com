@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>How to write documentation efficiently</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="A bunch of experiences and considerations about how to write documentation efficiently. Without wasting too much time or even more important, without getting too bored or stressed out.">
+    <meta name="keywords" content="documentation, development">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/how-to-write-documentation-efficiently">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="How to write documentation efficiently">
+    <meta name='twitter:description' content="A bunch of experiences and considerations about how to write documentation efficiently. Without wasting too much time or even more important, without getting too bored or stressed out.">
+
+    <meta property="og:title" content="How to write documentation efficiently" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/how-to-write-documentation-efficiently" />
+    <meta property="og:description" content="A bunch of experiences and considerations about how to write documentation efficiently. Without wasting too much time or even more important, without getting too bored or stressed out." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/me.jpg" />
+    <meta name='twitter:image' content="https://gianarb.it/img/me.jpg">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="How to write documentation efficiently">
+    <meta name="twitter:description" content="A bunch of experiences and considerations about how to write documentation efficiently. Without wasting too much time or even more important, without getting too bored or stressed out.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/me.jpg">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>How to write documentation efficiently</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">18 Apr 2020 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Four minute read</span>
+ · documentation, development</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>You have to remember two things to effectively read this article:</p>
+
+<ol>
+  <li>I have a blog post where I create content with a good frequency, and I do it
+for fun, so I like to write.</li>
+  <li>I work in remote, the HQ for InfluxData is in San Francisco, it means I am +9
+from a lot of my colleagues. Writing is a solid communication channel I use
+every day at work because I think it is great, and because I do not have
+other alternatives.</li>
+</ol>
+
+<p class="text-center text-center"><img src="/img/child-writes.jpg" alt="Child writing on paper" class="img-fluid" /></p>
+
+<h2 id="develop-a-workflow">Develop a workflow</h2>
+
+<p>If you do not like to clean your apartment a strategy you have is to try to keep
+it as clean as possible, and in order day by day, in this way you won’t have to
+spend a full weekend cleaning every corner of it. Spread a boring task in
+a way that won’t make you too tired.
+An effective way is to write along the way, side by side with the code you are
+developing.</p>
+
+<p>I can highlight a few steps in the process of writing code: analysis, design,
+validation, PoC, rollout. Those phases are not unique, they go continuously over
+many iteration. I write during all of those steps, many times. Iterations do not
+help only your code, they make documentation solid, you can check for typos an
+so on.</p>
+
+<p>If you make writing an ongoing process you will find yourself at the end where
+the only thing left is to organize and move what you wrote a way that readers
+will find familiar.</p>
+
+<h2 id="find-the-right-place">Find the right place</h2>
+
+<p>There are many time of documentation, because there are a lot of stakeholders
+and many phases to document (some of them where listed previously).</p>
+
+<p>If I have to think about my stakeholders they are:</p>
+
+<ol>
+  <li>project managers</li>
+  <li>documentation team if you are lucky, otherwise let’s say customers or end users.</li>
+  <li>VP or tech leads.</li>
+  <li>your teammate or reviewers</li>
+</ol>
+
+<p>All those people will enjoy reading a specific point of view, or phase of work.</p>
+
+<p>I think teammate or reviewers are kind of happy to read the process you followed
+to design and implement what you wrote, and they will really appreciate to read
+inline documentation for your code, doc blocks and so on.</p>
+
+<p>Project Managers will enjoy reading considerations on issues and things like
+that, they are super valuable and I end up copy pasting a lot from those
+discussions.</p>
+
+<p>End user obviously need a function documentation they they can follow and also a
+bit about internal design, monitoring mainly to get them onboard with the work
+you developed. It really depends on your audience. We are lucky and we have a
+team that is capable of reading code and figure out what we did, but it is a
+nice exercise to help them explaining in a good way your work.</p>
+
+<p>VP and tech leaders are usually focused on the design, why you did something in
+a way other than another, the trade off you accepted, the one you avoided, why
+and how. I like the idea to write this kind of documentation in the code itself.</p>
+
+<p>I am fascinated when I open C codebases where the first thousen lines of code
+are documentation. In Go packages can have a file called <code class="highlighter-rouge">./doc.go</code> that <code class="highlighter-rouge">godoc</code>
+will render as a package introduction. If you work with the kind of tech lead or
+VP that are not used to read code anymore, you can always copy paste it to
+google doc.</p>
+
+<h2 id="write-a-lot">Write a lot</h2>
+
+<p>This point self explains itself. More you write during all the phases if your
+work, less you will have to do all together at the end of the code iteration.</p>
+
+<p>Where I usually end up tired about the code I wrote, even more when it takes
+weeks, and it is not easy to work on.</p>
+
+<h2 id="pair-on-documentation">Pair on documentation</h2>
+
+<p>I am not a fan of pair programming but recently I changed my mind a little bit,
+probably caused by all this social isolation. Before jumping straight on writing
+code with my teammate two solid hours over two iterations writing the <code class="highlighter-rouge">./doc.go</code>
+file together. The outcome made me happy, I hope it will work the same for you.</p>
+
+<p class="text-center text-center"><img src="/img/toomany-files.jpg" alt="Child writing on paper" class="img-fluid" /></p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>This is my experience when writing documentation, but as I said, I love to do
+it! Do you have anything to share about it? I am particularly curious about how
+and if you READ somebody else documentation, internally written by your teammate
+how do you evaluate it and if you have any suggestion to make it more friendly.
+Because it is good to write but people has to be able to read it and get what
+they need out of it without wasting too much time.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/how-to-write-documentation-efficiently';
+    this.page.identifier = 'https://gianarb.it/blog/how-to-write-documentation-efficiently';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

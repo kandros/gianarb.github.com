@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Chef Server startup notes</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="This tutorial explain how to setup a chef server on digitalocean from zero. It also shows how to use it to make a provisioning of one Chef Client. Chef is one of the most used provisioning tool. DevOps tool to apply infrastructure as code.">
+    <meta name="keywords" content="chef, devops, automation, ruby, infrastructure, infra as code, digitalocean">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/chef-server-startup-notes">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Chef Server startup notes">
+    <meta name='twitter:description' content="This tutorial explain how to setup a chef server on digitalocean from zero. It also shows how to use it to make a provisioning of one Chef Client. Chef is one of the most used provisioning tool. DevOps tool to apply infrastructure as code.">
+
+    <meta property="og:title" content="Chef Server startup notes" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/chef-server-startup-notes" />
+    <meta property="og:description" content="This tutorial explain how to setup a chef server on digitalocean from zero. It also shows how to use it to make a provisioning of one Chef Client. Chef is one of the most used provisioning tool. DevOps tool to apply infrastructure as code." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/chef.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/chef.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Chef Server startup notes">
+    <meta name="twitter:description" content="This tutorial explain how to setup a chef server on digitalocean from zero. It also shows how to use it to make a provisioning of one Chef Client. Chef is one of the most used provisioning tool. DevOps tool to apply infrastructure as code.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/chef.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Chef Server startup notes</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">10 Nov 2016 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Nine minute read</span>
+ · chef, devops, automation, ruby, infrastructure, infra as code, digitalocean</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>I worked with different provisioning tools and configuration managers in the
+last couple of years: Chef, Saltstack, Puppet, Shell, Python, Terraform.
+Everything that was allowing me to make automation and describe my
+infrastructure as a code.</p>
+
+<p>I really think that this is the correct street and every companies need to stop
+to persist random commands in a server:</p>
+
+<ul>
+  <li>The code used to describe your infrastructure is reausable.</li>
+  <li>The code is a good backup and you can put it in your repository to study of
+it changed and manage rollbacks.</li>
+  <li>Your servers become collaborative and your team can review what you do.</li>
+</ul>
+
+<p>Chef is my first configuration manager, I started to use it with Vagrant few
+years ago but I never had change to deep drive into it and into the full
+chef-server configuration from scratch.</p>
+
+<p>I had this change few days ago and I am here to share some notes. I used
+digitalocean to start 1 Chef Server and two nodes, during this post I am not
+focused about the recipe and cookbook syntax but I will share some commands and
+notes that I took during my test to start and configure a Chef Server.</p>
+
+<p>First of all <code class="highlighter-rouge">doctl</code> is the command line application provided by digitalocean
+to manage droplets and everything, I used that tool to start my droplets.</p>
+
+<p>The Chef Server doesn’t run in little box, we need 2gb RAM, I tried with small
+size but nothing was working, the installation process gone out of memory very
+soon. Thanks Ruby.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>doctl compute droplet create chef-server <span class="se">\</span>
+  <span class="nt">--region</span> ams2 <span class="nt">--size</span> 2gb <span class="nt">--image</span> 20385558 <span class="se">\</span>
+  <span class="nt">--access-token</span> <span class="nv">$DO</span> <span class="nt">--ssh-keys</span> <span class="nv">$DO_SSH</span>
+
+<span class="nv">$ </span>doctl compute droplet create n1 <span class="se">\</span>
+  <span class="nt">--region</span> ams2 <span class="nt">--size</span> 512mb <span class="nt">--image</span> 20385558 <span class="se">\</span>
+  <span class="nt">--access-token</span> <span class="nv">$DO</span> <span class="nt">--ssh-keys</span> <span class="nv">$DO_SSH</span>
+</code></pre></div></div>
+<p><code class="highlighter-rouge">$DO</code> contains my digitalocean access key and <code class="highlighter-rouge">$DO_SSH</code> the id of the ssh key
+to log into the servers. You can leave the last one empty and you will receive
+an email with the password.</p>
+
+<p>When the process is gone you will be able to copy the ip of the chef-server and go into it.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>doctl compute droplet <span class="nb">ls
+
+</span>ID              Name            Public IPv4     Public IPv6     Memory  VCPUs   Disk    Region  Image           Status  Tags
+30cw4230        chef-server                                     2gb     1       20      ams2    Debian 8.6 x64  new
+q0514230        n1                                              512     1       20      ams2    Debian 8.6 x64  new
+</code></pre></div></div>
+
+<p>This provisioning script installs Chef-Server from the official deb package and
+also install chef-manage.  Chef-manage provides a nice web interface to manage
+users, cookbooks and everything is stored into the server.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd</span> /tmp
+<span class="nb">sudo </span>apt-get update
+<span class="nb">sudo </span>apt-get install <span class="nt">-y</span> unzip curl
+curl <span class="nt">-LS</span> https://packages.chef.io/stable/ubuntu/16.04/chef-server-core_12.9.1-1_amd64.deb <span class="nt">-o</span> chef-server-core_12.9.1-1_amd64.deb
+<span class="nb">sudo </span>dpkg <span class="nt">-i</span> chef-server-core_12.9.1-1_amd64.deb
+<span class="nb">sudo </span>chef-server-ctl reconfigure
+</code></pre></div></div>
+
+<p>Our server is up an running reachable over HTTPS (port 443). This configuration
+is just for testing purpose. It’s not a good practice leave a Chef Server public
+as we are doing. It’s a better idea to close it under a VPN for example.</p>
+
+<p>Chef supports an authentication and authorization level based on users and
+companies. We are creating a new user called <code class="highlighter-rouge">Gianluca Arbezzano</code> with username
+<code class="highlighter-rouge">ga@thumpflow.com</code> and as password <code class="highlighter-rouge">hellociaobye</code>.
+We are also create an organization and we are associating user with org.</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>chef-server-ctl user-create gianarb Gianluca Arbezzano ga@thumpflow.com <span class="s1">'hellociaobye'</span> <span class="nt">--filename</span> /root/gianarb_test.pem
+chef-server-ctl org-create tf <span class="s1">'ThumpFlow'</span> <span class="nt">--association_user</span> gianarb <span class="nt">--filename</span> /root/tf-validator.pem
+chef-server-ctl org-user-add tf gianarb
+</code></pre></div></div>
+
+<p>At this point we can configure a nice UI for our Chef Server with this simple
+commands:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>chef-server-ctl install chef-manage
+<span class="nb">sudo </span>chef-server-ctl reconfigure
+<span class="nb">sudo </span>chef-manage-ctl reconfigure <span class="nt">--accept-license</span>
+</code></pre></div></div>
+
+<p>Chef-Server works with the concept of Organization and User. The organization
+is a group of users that share cookbooks, rules and so on.  Users can update
+cookbooks and there is also a set of permission to manage access on particular
+resources like:</p>
+
+<ul>
+  <li>Add a new node</li>
+  <li>Syncronize cookbook with the server</li>
+  <li>add new users</li>
+</ul>
+
+<p>At this point we have one user with its own key and credential. You can come
+back into  the UI and use username (gianarb) and password (hellociaobye) to
+login in.  The key (–filename) is used to configure knife and encrypt
+communication between client and server.  There are 3 main actors and this
+point that we need to know:</p>
+
+<ul>
+  <li>Chef-Server contains all our recipes, cookbooks and it’s the brain of the cluster.</li>
+  <li>Nodes are all servers configurated by Chef.</li>
+  <li>Workstation are usually enable to syncronize, update cookbooks. For example
+Jenkins or your Continuous Integration System after every new commit can push
+every changes into the server.</li>
+</ul>
+
+<p>Chef Server has a HTTP api and <code class="highlighter-rouge">knife</code> is a CLI that provide an easy
+integration for your node and workstation.  With this command we are installing
+knife. You can do it in your local environment, to become a workstation and into
+the server. (it’s usually a god practice create a user, we are doing everything
+as root right know but it’s BAD! don’t be bad!).</p>
+
+<p>We have two certificate one is <code class="highlighter-rouge">gianarb_test.pem</code> and it’s identify a specific
+user, we need to generate our for every workstation/member of the team and the
+<code class="highlighter-rouge">validation_client</code> represent the organization, it could be the same across
+multiple users.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-O</span> <span class="nt">-L</span> http://www.opscode.com/chef/install.sh
+bash ./install.sh
+</code></pre></div></div>
+
+<p>You can copy paste the 2 keys into the local machine and run this command that
+will drive your into the process to create a <code class="highlighter-rouge">~/.chef/knife.rb</code> file that your
+cli uses to communicate with the chef server.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>knife configure
+</code></pre></div></div>
+
+<p>This is an example of generated knife configuration file that I did in my
+server.  I lose times to understand the <code class="highlighter-rouge">chef_server_url</code> it contains the
+hostname of the server but also the `/organization/<organization_short_name>'
+be careful about this or knife will come back with an HTML response in your terminal.</organization_short_name></p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">log_level</span>                <span class="ss">:info</span>
+<span class="n">log_location</span>             <span class="no">STDOUT</span>
+<span class="n">node_name</span>                <span class="s1">'gianarb'</span>
+<span class="n">client_key</span>               <span class="s1">'/root/gianarb_test.pem'</span>
+<span class="n">validation_client_name</span>   <span class="s1">'tf-validator'</span>
+<span class="n">validation_key</span>           <span class="s1">'/root/tf-validator.pem'</span>
+<span class="n">chef_server_url</span>          <span class="s1">'https://chef-server:443/organizations/tf'</span>
+<span class="n">syntax_check_cache_path</span>  <span class="s1">'/root/.chef/syntax_check_cache'</span>
+<span class="n">cookbook_path</span>            <span class="p">[</span><span class="s2">"/home/gianarb/git/chef-pluto/cookbooks"</span><span class="p">]</span>
+<span class="n">ssl_verify_mode</span>          <span class="ss">:verify_none</span>
+</code></pre></div></div>
+
+<p>The last 2 commands download and validate the SSH certificate because in the
+default configuration the CA is unofficial and we need to force our client to
+trust the cert.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>knife ssl fetch
+knife ssl check
+</code></pre></div></div>
+
+<p>Know that we did that in our server and also in our local environment we can
+clone <a href="https://github.com/gianarb/chef-pluto">chef-pluto</a> a repository that contains recipes, rules and cookbooks to
+configure our node, we need to syncronize it into the server.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone git@github.com:gianarb/chef-pluto.git /home/gianarb/git/chef-pluto/chef-pluto
+<span class="nb">cd</span> /home/gianarb/git/chef-pluto/chef-pluto
+knife update /
+</code></pre></div></div>
+<p>The last command update all our repository into the chef server. You can log in
+into the web ui and see the <code class="highlighter-rouge">micro</code> cookbook and the <code class="highlighter-rouge">power</code> rule.</p>
+
+<p><a href="https://github.com/gianarb/micro">micro</a> is an application that I wrote in go and it just expose the ip of the
+machine. It’s a binary and the cookbook downloads and starts it, pretty
+straightforward.</p>
+
+<p>At this point we need to make a provisioning of our first node, usually is the
+server that install and start the Chef Client into the node, what we can do
+it’s store a private key into the server to allow chef to connect to the node.
+I copied the digitalocean private key into the server (~/do), from security
+point of view you can create a dedicate one. You can also use the -P option if
+you are not using an ssh-key to run this example.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>knife bootstrap &lt;ip-node&gt; <span class="nt">-N</span> node1 <span class="nt">--ssh-user</span> root <span class="nt">-r</span> <span class="s1">'role[power]'</span> <span class="nt">-i</span> ~/do
+</code></pre></div></div>
+
+<p>If everything it’s good you can reach the application from port <code class="highlighter-rouge">8000</code> into the
+browser. The log is something like:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>knife bootstrap 95.85.52.211 <span class="nt">-N</span> testNode <span class="nt">--ssh-user</span> root <span class="nt">-r</span> <span class="s1">'role[power]'</span> <span class="nt">-i</span> ~/do
+Doing old-style registration with the validation key at /root/tf-validator.pem...
+Delete your validation key <span class="k">in </span>order to use your user credentials instead
+
+Connecting to 95.85.52.211
+95.85.52.211 <span class="nt">-----</span><span class="o">&gt;</span> Existing Chef installation detected
+95.85.52.211 Starting the first Chef Client run...
+95.85.52.211 Starting Chef Client, version 12.15.19
+95.85.52.211 resolving cookbooks <span class="k">for </span>run list: <span class="o">[</span><span class="s2">"micro"</span><span class="o">]</span>
+95.85.52.211 Synchronizing Cookbooks:
+95.85.52.211   - micro <span class="o">(</span>0.1.0<span class="o">)</span>
+95.85.52.211 Installing Cookbook Gems:
+95.85.52.211 Compiling Cookbooks...
+95.85.52.211 Converging 2 resources
+95.85.52.211 Recipe: micro::default
+95.85.52.211   <span class="k">*</span> remote_file[Download micro] action create_if_missing <span class="o">(</span>up to date<span class="o">)</span>
+95.85.52.211   <span class="k">*</span> service[Start micro] action start
+95.85.52.211     - start service service[Start micro]
+95.85.52.211
+95.85.52.211 Running handlers:
+95.85.52.211 Running handlers <span class="nb">complete
+</span>95.85.52.211 Chef Client finished, 1/2 resources updated <span class="k">in </span>02 seconds
+</code></pre></div></div>
+
+<p>knife started the client, syncronized cookbooks, it assigned the <code class="highlighter-rouge">power</code> role
+at the node and run the correct recipes.  Your server is ready and you can
+create and delete nodes to make your infrastructure complex how much you like.</p>
+
+<p>Chef is quite old and it’s in ruby (the first one could be a plus but the
+second one no really) but it continue to be a good way to make a provisioning o
+your infrastructure. Lots of people moved to Ansible but the agent that they
+reject offer a very good orchestration feature that it’s something that I
+usually search.</p>
+
+<p>I worked with StalStack and it’s very nice, the syntax is easy
+and it seems less expensive in terms of configuration, resources and setup but
+I am not really sure about the YAML specification. I am not a ruby developer
+and I don’t love the ruby syntax but in the end is a programming languages and
+I am doing infrastructure as a code.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/chef-server-startup-notes';
+    this.page.identifier = 'https://gianarb.it/blog/chef-server-startup-notes';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

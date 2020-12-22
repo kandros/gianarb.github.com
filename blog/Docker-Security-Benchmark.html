@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Docker Bench Security</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Container security is a hot topic because today containers are everywhere also in production. It means that we need to trust this technology and start to think about best practices and tools to make our container environment safe.">
+    <meta name="keywords" content="docker, scaledocker, security, automation, devops, open source, docker captain">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/Docker-Security-Benchmark">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Docker Bench Security">
+    <meta name='twitter:description' content="Container security is a hot topic because today containers are everywhere also in production. It means that we need to trust this technology and start to think about best practices and tools to make our container environment safe.">
+
+    <meta property="og:title" content="Docker Bench Security" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/Docker-Security-Benchmark" />
+    <meta property="og:description" content="Container security is a hot topic because today containers are everywhere also in production. It means that we need to trust this technology and start to think about best practices and tools to make our container environment safe." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/docker.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/docker.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Docker Bench Security">
+    <meta name="twitter:description" content="Container security is a hot topic because today containers are everywhere also in production. It means that we need to trust this technology and start to think about best practices and tools to make our container environment safe.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/docker.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Docker Bench Security</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">15 Nov 2016 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Two minute read</span>
+ · docker, scaledocker, security, automation, devops, open source, docker captain</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Frequently, best practices help you to have a safe environment,
+<a href="https://github.com/docker/docker-bench-security">docker-bench-security</a> is an
+open source project that runs in a container and scans your environment to
+report a set of common mistakes like:</p>
+
+<ul>
+  <li>Your kernel is too old</li>
+  <li>Your docker is not up to date</li>
+  <li>Some Docker daemon configurations are not good enough to run a production environment</li>
+  <li>Your container runs 2 processes</li>
+  <li>and others</li>
+</ul>
+
+<p>It’s a great idea to run it at some stage in each host to have an idea about
+the status of your environment. To do that you can just use this command when
+running a container</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-it</span> <span class="nt">--net</span> host <span class="nt">--pid</span> host <span class="nt">--cap-add</span> audit_control <span class="se">\</span>
+    <span class="nt">-v</span> /var/lib:/var/lib <span class="se">\</span>
+    <span class="nt">-v</span> /var/run/docker.sock:/var/run/docker.sock <span class="se">\</span>
+    <span class="nt">-v</span> /usr/lib/systemd:/usr/lib/systemd <span class="se">\</span>
+    <span class="nt">-v</span> /etc:/etc <span class="nt">--label</span> docker_bench_security <span class="se">\</span>
+    docker/docker-bench-security
+</code></pre></div></div>
+
+<p>A good way to start is your run  it in your local environment. Run the command
+and check what you can do to make your local environment safe.  This tool is
+open source on GitHub and it’s also a great example of collaboration and how a
+community can share experiences to help other members to improve an
+environment.  This is a partial output:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Initializing Thu Nov 24 21:35:24 GMT 2016
+
+<span class="o">[</span>INFO] 1 - Host Configuration
+<span class="o">[</span>WARN] 1.1  - Create a separate partition <span class="k">for </span>containers
+<span class="o">[</span>PASS] 1.2  - Use an updated Linux Kernel
+<span class="o">[</span>PASS] 1.4  - Remove all non-essential services from the host - Network
+<span class="o">[</span>PASS] 1.5  - Keep Docker up to date
+<span class="o">[</span>INFO]       <span class="k">*</span> Using 1.13.01 which is current as of 2016-10-26
+<span class="o">[</span>INFO]       <span class="k">*</span> Check with your operating system vendor <span class="k">for </span>support and security maintenance <span class="k">for </span>docker
+<span class="o">[</span>INFO] 1.6  - Only allow trusted users to control Docker daemon
+<span class="o">[</span>INFO]      <span class="k">*</span> docker:x:999:gianarb
+<span class="o">[</span>WARN] 1.7  - Failed to inspect: auditctl <span class="nb">command </span>not found.
+<span class="o">[</span>WARN] 1.8  - Failed to inspect: auditctl <span class="nb">command </span>not found.
+<span class="o">[</span>WARN] 1.9  - Failed to inspect: auditctl <span class="nb">command </span>not found.
+<span class="o">[</span>INFO] 1.10 - Audit Docker files and directories - docker.service
+<span class="o">[</span>INFO]      <span class="k">*</span> File not found
+<span class="o">[</span>INFO] 1.11 - Audit Docker files and directories - docker.socket
+<span class="o">[</span>INFO]      <span class="k">*</span> File not found
+</code></pre></div></div>
+<p>Sometime to have a good result you just need to run a single command.</p>
+
+<p>This article is part of “Drive your boat like a Captain”. It’s a book about
+Docker in production, how manage a cluster of Docker Engine with Swarm and what
+it means to manage a production environment today.</p>
+
+<p>Keep in touch to receive news about the book
+<a href="/blog/scaledocker">scaledocker.com</a>.  If you are looking for a Docker
+Getting Started you can also look on the first chapter that I released <a href="/blog/docker-the-fundamentals">Docker
+The
+Fundamentals</a></p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/Docker-Security-Benchmark';
+    this.page.identifier = 'https://gianarb.it/blog/Docker-Security-Benchmark';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

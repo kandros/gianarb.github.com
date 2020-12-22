@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Observability is for troubleshooting</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="The difference between monitoring and observability is the fact that observability is for troubleshooting. And you troubleshoot in any environment not only in production. This article contains how I do observability in one of my application in Go.">
+    <meta name="keywords" content="go, golang, zap, tracing, opentracing, observability, log">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/go-observability-is-for-troubleshooting">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Observability is for troubleshooting">
+    <meta name='twitter:description' content="The difference between monitoring and observability is the fact that observability is for troubleshooting. And you troubleshoot in any environment not only in production. This article contains how I do observability in one of my application in Go.">
+
+    <meta property="og:title" content="Observability is for troubleshooting" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/go-observability-is-for-troubleshooting" />
+    <meta property="og:description" content="The difference between monitoring and observability is the fact that observability is for troubleshooting. And you troubleshoot in any environment not only in production. This article contains how I do observability in one of my application in Go." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/gianarb.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/gianarb.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Observability is for troubleshooting">
+    <meta name="twitter:description" content="The difference between monitoring and observability is the fact that observability is for troubleshooting. And you troubleshoot in any environment not only in production. This article contains how I do observability in one of my application in Go.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/gianarb.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Observability is for troubleshooting</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">28 Feb 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Three minute read</span>
+ · go, golang, zap, tracing, opentracing, observability, log</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Monitoring notifies you when something does not work. You get an alert, a slap in
+the face based on the priority of the issue.  Observability is about
+troubleshooting, debugging, “looking around.” You don’t use observability
+techniques only when something doesn’t work.</p>
+
+<p>Mainly because you don’t know where it happens, it can be anytime.
+You observe during development, locally or in production, anytime.</p>
+
+<p>The ability to use the same observability tools and techniques such as tracing,
+log analysis and metrics is a tremendous value. You get used to them day by day
+and not only under pressure, during an outage.
+I practical trip that I can give you when you are instrumenting an application
+is about interconnection. You need a way to connect logs, with traces and with
+metrics.</p>
+
+<p>There is nothing too complicated to understand. Every HTTP request has its own
+generated ID.</p>
+
+<p>This ID will become the trace ID, and it will be attached to all the logs
+generated by that request.
+One of my application I instrumented uses
+<a href="https://github.com/opentracing/opentracing-go">opentracing/opentracing-to</a> and
+<a href="https://github.com/uber-go/zap">uber-go/zap</a> as the logger.  I use a middleware
+similar to the one provided by the
+<a href="https://github.com/opentracing-contrib/go-stdlib/blob/master/nethttp/server.go">opentracing-contrib/go-stdlib</a>.</p>
+
+<p>Inside an HTTP handler, I configure the logger to add the <code class="highlighter-rouge">trace_id</code> for every
+log:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">logger</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">GetLogger</span><span class="p">()</span><span class="o">.</span><span class="n">With</span><span class="p">(</span><span class="n">zap</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"api.handler"</span><span class="p">,</span><span class="x"> </span><span class="s">"ping"</span><span class="p">))</span><span class="x">
+</span><span class="k">if</span><span class="x"> </span><span class="n">intTraceId</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">req</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="s">"internal_trace_id"</span><span class="p">);</span><span class="x"> </span><span class="n">intTraceId</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">logger</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">logger</span><span class="o">.</span><span class="n">With</span><span class="p">(</span><span class="n">zap</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"trace_id"</span><span class="p">,</span><span class="x"> </span><span class="n">intTraceId</span><span class="o">.</span><span class="p">(</span><span class="kt">string</span><span class="p">)))</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+<p>In this way from this point in time the <code class="highlighter-rouge">logger</code> will add the trace_id to every line of log.</p>
+
+<p>With this code <code class="highlighter-rouge">req.Context().Value("internal_trace_id")</code> I am retrieving the
+“trace_id” from the context. In Go every HTTP request has a context attached and
+this work because inside the middleware I set the trace_id in the context of the
+request and also as HTTP header:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// This is a temporary fix until this issue will be addressed</span><span class="x">
+</span><span class="c">// https://github.com/opentracing/opentracing-go/issues/188</span><span class="x">
+</span><span class="c">// This works only with Zipkin.</span><span class="x">
+</span><span class="n">zipkinSpan</span><span class="p">,</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sp</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span><span class="o">.</span><span class="p">(</span><span class="n">zipkin</span><span class="o">.</span><span class="n">SpanContext</span><span class="p">)</span><span class="x">
+</span><span class="k">if</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="o">==</span><span class="x"> </span><span class="no">true</span><span class="x"> </span><span class="o">&amp;&amp;</span><span class="x"> </span><span class="n">zipkinSpan</span><span class="o">.</span><span class="n">TraceID</span><span class="o">.</span><span class="n">Empty</span><span class="p">()</span><span class="x"> </span><span class="o">==</span><span class="x"> </span><span class="no">false</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">w</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="s">"X-Trace-ID"</span><span class="p">,</span><span class="x"> </span><span class="n">zipkinSpan</span><span class="o">.</span><span class="n">TraceID</span><span class="o">.</span><span class="n">ToHex</span><span class="p">())</span><span class="x">
+  </span><span class="n">r</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">r</span><span class="o">.</span><span class="n">WithContext</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">WithValue</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">Context</span><span class="p">(),</span><span class="x"> </span><span class="s">"internal_trace_id"</span><span class="p">,</span><span class="x"> </span><span class="n">zipkinSpan</span><span class="o">.</span><span class="n">TraceID</span><span class="o">.</span><span class="n">ToHex</span><span class="p">()))</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+<p>Having the <code class="highlighter-rouge">trace_id</code> exposed as header is nice because I can ask and traing
+everyone to just grab that parameter when they have issues. Or we can code the
+API consumer in a way that takes care about this value when something doesn’t go
+as expected.</p>
+
+<p>All these connections are useful to build a context from different sources. This
+is the secret for happiness and Welcome to my Wonderland!</p>
+
+<p><img src="/img/alice-observability.jpg" alt="" /></p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/go-observability-is-for-troubleshooting';
+    this.page.identifier = 'https://gianarb.it/blog/go-observability-is-for-troubleshooting';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>What is distributed tracing. Zoom on opencensus and opentracing</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Distributed tracing is a fast growing concept. We increased the distributions for our applications and the consequence is a different complexity to monitor and understand what is going on across regions and applications (microservices). With this article I share something about what tracing is and my experience with opentracing and opencensus.">
+    <meta name="keywords" content="codeinstrumentation, distributed tracing, opentracing, opencensus, tracing, distributed system, monitoring, cloud, observability, tracing">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/what-is-distributed-tracing-opentracing-opencensus">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="What is distributed tracing. Zoom on opencensus and opentracing">
+    <meta name='twitter:description' content="Distributed tracing is a fast growing concept. We increased the distributions for our applications and the consequence is a different complexity to monitor and understand what is going on across regions and applications (microservices). With this article I share something about what tracing is and my experience with opentracing and opencensus.">
+
+    <meta property="og:title" content="What is distributed tracing. Zoom on opencensus and opentracing" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/what-is-distributed-tracing-opentracing-opencensus" />
+    <meta property="og:description" content="Distributed tracing is a fast growing concept. We increased the distributions for our applications and the consequence is a different complexity to monitor and understand what is going on across regions and applications (microservices). With this article I share something about what tracing is and my experience with opentracing and opencensus." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="What is distributed tracing. Zoom on opencensus and opentracing">
+    <meta name="twitter:description" content="Distributed tracing is a fast growing concept. We increased the distributions for our applications and the consequence is a different complexity to monitor and understand what is going on across regions and applications (microservices). With this article I share something about what tracing is and my experience with opentracing and opencensus.">
+    <meta name="twitter:image:src" content="https://gianarb.it">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>What is distributed tracing. Zoom on opencensus and opentracing</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">18 Feb 2018 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">11 minute read</span>
+ · codeinstrumentation, distributed tracing, opentracing, opencensus, tracing, distributed system, monitoring, cloud, observability, tracing</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>A few months ago I started to actively study, support and use opentracing and
+more in general the distributed tracing topic.</p>
+
+<p>In this article, I will share something about what I have learned starting from
+the basic I hope to get your thoughts and questions via Twitter
+<a href="https://twitter.com/gianarb">@gianarb</a>.</p>
+
+<p>We all know the trend for the last couple of years. Spread applications across
+containers, cloud providers and split them into smallest units called services
+or microservices, pets…</p>
+
+<p>This procedure brings a lot of advantages:</p>
+
+<ul>
+  <li>you can manage people in a better way and spread them across this small units.</li>
+  <li>small units are easy to understand for new people or after a couple of months.
+In a work like our where there is a high turnover having the ability to
+rewrite a service if nobody knows it in a couple of days it’s great.</li>
+  <li>You can monitor these units in a better way and if you detect scalability
+problems or bottleneck you can stay focused on the specific problem without
+having other functions around. It enforces the single responsibility in some
+way.</li>
+</ul>
+
+<p>Btw there are other points for sure, but the last one is very important and I
+think it helps us to understand why tracing is so important now.</p>
+
+<p>We discover that monitor this pets is very hard and it’s different compared to
+the previous situation. A lot of teams discovered this complexity moving forward
+with services making noise in production.</p>
+
+<p>Our focus is not on the virtual machine, on the hostname or the even on the
+container. I don’t care about the status of the server. I care about the status
+of the service and even deeper I care about the status of a single event in my
+system. This is also one of the reasons why tools like Kafka are so powerful and
+popular. Reply a section of your history and collect events like user
+registration, new invoice, new attendees register at your event, new flight
+booked or new article published are the most interesting part here.</p>
+
+<p>Servers, containers should be replaceable things and they shouldn’t be a
+problem. The core here is the event. And you need to be 100% sure about having
+it in someplace.</p>
+
+<p>Same for monitoring, if the servers, containers are not important but events are
+you should monitor the event and not the server.</p>
+
+<p>Oh, don’t forget about distribution. It makes everything worst and more
+complicated my dear. Events move faster than everything else. They are across
+services, containers, data centers.</p>
+
+<p>Where is the event? Where it failed. How a spike for particular events behave on
+your system? If you have too many new registrations are you still able to serve
+your applications?</p>
+
+<p>In a big distributed environments what a particular service is calling? Or is it
+used? Maybe nobody is using it anymore. These questions need to have an answer.</p>
+
+<p>Distributed tracing is one of the ways. It doesn’t solve all the problems but it
+provides a new point of view.</p>
+
+<p>In practice speaking in HTTP terms tracings translate on following a specific
+request from its start (mobile app, web app, cronjobs, other apps) so it’s the .</p>
+
+<p>Registering how many applications it crosses to, for how long. Labeling these
+metrics you can event understand latency between services.</p>
+
+<p><img src="https://www.hawkular.org/img/blog/2017/2017-04-19-jaeger-trace.png" class="img-fluid" />
+<small>from https://www.hawkular.org/</small></p>
+
+<p>Speaking in the right language, this image describes a trace. It’s an HTTP to
+<code class="highlighter-rouge">fronted</code> service. It’s a GET request on the <code class="highlighter-rouge">/dispatch</code> route. You can see how
+far you can go. A trace is a collection of spans.</p>
+
+<p>Every span has it’s own id and an optional parent id to create the hierarchy.
+Spans support what is called Span Tags. It is a key-value store where the key is
+always a string and some of them are “reserved” to describe specific behaviors.
+You can look at them <a href="https://github.com/opentracing/specification/blob/master/semantic_conventions.md#standard-span-tags-and-log-fields">inside the specification
+itselt</a>.
+Usually, UI is using this standard tag to build a nice visualization. For
+example if a span contains the tag <code class="highlighter-rouge">error</code> a lot of tracers colored it red.</p>
+
+<p>I suggest you read at the standard tags because it will give you the idea about
+how descriptive a span can be.</p>
+
+<p>The architecture looks like this:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   +-------------+  +---------+  +----------+  +------------+
+   | Application |  | Library |  |   OSS    |  |  RPC/IPC   |
+   |    Code     |  |  Code   |  | Services |  | Frameworks |
+   +-------------+  +---------+  +----------+  +------------+
+          |              |             |             |
+          |              |             |             |
+          v              v             v             v
+     +-----------------------------------------------------+
+     | · · · · · · · · · · OpenTracing · · · · · · · · · · |
+     +-----------------------------------------------------+
+       |               |                |               |
+       |               |                |               |
+       v               v                v               v
+ +-----------+  +-------------+  +-------------+  +-----------+
+ |  Tracing  |  |   Logging   |  |   Metrics   |  |  Tracing  |
+ | System A  |  | Framework B |  | Framework C |  | System D  |
+ +-----------+  +-------------+  +-------------+  +-----------+
+</code></pre></div></div>
+<p><small>from <a href="https://opentracing.io/documentation/pages/instrumentation/common-use-cases.html" target="_blank">opentracing.org</a><small></small></small></p>
+
+<p>There are different instrumentation libraries across multiple languages and you
+need to embed one of them in your application. It usually provides a global
+variable where you can add spans too. Time by time they are stored in the
+tracer that you select. If you are using Zipkin as tracer you can select
+different backends like ElasticSearch and Cassandra.
+Tracers provides API and UI to store and visualize traces.</p>
+
+<p>As you can see from the graph above Opentracing “is able” to push to Tracers,
+Logging system, metrics and so on. With my experience with opentracing, I don’t
+know how this can be done.</p>
+
+<p>I always used it with a Tracer like Zipkin or Jaeger to store spans. Logs are
+covered by the spec because you can attach to every spans one or multiple <code class="highlighter-rouge">Span
+Logs</code>.</p>
+
+<blockquote>
+  <p>each of which is itself a key:value map paired with a timestamp. The keys must
+be strings, though the values may be of any type. Not all OpenTracing
+implementations must support every value type.</p>
+</blockquote>
+
+<p><small>from <a href="https://github.com/opentracing/specification/blob/master/specification.md" target="_blank">opentracing.org</a><small></small></small></p>
+
+<p>The idea behind this feature is clear. There are too many buzzwords: metrics,
+logs, events, time series and now traces.</p>
+
+<p>It’s easy to end up with more
+instrumentation libraries that business code. That’s probably why opentracing
+cover this uses case. Logs and traces are time series. That’s probably why
+metrics are there.</p>
+
+<p>Using the go-sdk it looks like this:</p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">span</span><span class="p">,</span><span class="x"> </span><span class="n">ctx</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">opentracing</span><span class="o">.</span><span class="n">StartSpanFromContext</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="x"> </span><span class="s">"operation_name"</span><span class="p">)</span><span class="x">
+    </span><span class="k">defer</span><span class="x"> </span><span class="n">span</span><span class="o">.</span><span class="n">Finish</span><span class="p">()</span><span class="x">
+    </span><span class="n">span</span><span class="o">.</span><span class="n">LogFields</span><span class="p">(</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"event"</span><span class="p">,</span><span class="x"> </span><span class="s">"soft error"</span><span class="p">),</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"type"</span><span class="p">,</span><span class="x"> </span><span class="s">"cache timeout"</span><span class="p">),</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="s">"waited.millis"</span><span class="p">,</span><span class="x"> </span><span class="m">1500</span><span class="p">))</span><span class="x">
+</span></code></pre></div></div>
+
+<p>But I am not able to find a way to say: “Forward all these logs to ….elastic
+and this traces to Zipkin”. And I don’t know if the expectation is to have
+tracers smart enough to do that. But from my experience trying to extend Zipkin,
+this looks like a hard idea. At first, because the tracers are out of the
+OpenTracing’s scope.</p>
+
+<p>If the goal is to wrap together everything logs have precise use case from ages.
+They work pretty well and you can’t change the expectation. They can be a
+real-time stream on stdout, stderr and/or other thousands of exporter. I can’t
+find this kind of work there. So, looking at the code it’s not clear who is in
+charge of what. But the graph is pretty.</p>
+
+<p>I like the idea and I started looking at <a href="https://opencensus.io/">OpenCensus</a> a
+library open sourced by Google from its experience with StackDriver and the
+Google’s scale. It has its
+<a href="https://github.com/census-instrumentation/opencensus-specs">specification</a> and
+it provides a set of <a href="https://github.com/census-instrumentation/">libraries</a>
+that you can add to your application to get what they call stats, traces out
+from your app.  Stat stays for metrics, events. It’s another buzz probably!</p>
+
+<p>The concept looks similar to OpenTracing, obviously, the specs are different.</p>
+
+<p>Looking at the code, the go-SDK looks a lot more clear. I can clearly see stats
+and tracing objects, they both accept exporters and they can be Prometheus,
+Zipkin, Jaeger, StackDriver and so on. I like the idea that the exporter is part
+of the project, you don’t need a tracing application like Zipkin, you can write
+your exporter to store data in your custom database and you are ready to go.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>.
+├── appveyor.yml
+├── exporter
+│   ├── jaeger
+│   ├── prometheus
+│   ├── stackdriver
+│   └── zipkin
+├── internal
+├── plugin
+├── README.md
+├── stats
+│   ├── internal
+│   ├── ...
+│   └── view
+├── tag
+├── trace
+</code></pre></div></div>
+
+<p>You can probably do the same with OpenTracing writing your tracer that store
+things in your custom databases jumping Zipkin and Jaeger, it looks a bit more
+complicated looking at the interface:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// opencensus-go/trace/export.go</span><span class="x">
+
+</span><span class="c">// Exporter is a type for functions that receive sampled trace spans.</span><span class="x">
+</span><span class="c">//</span><span class="x">
+</span><span class="c">// The ExportSpan method should be safe for concurrent use and should return</span><span class="x">
+</span><span class="c">// quickly; if an Exporter takes a significant amount of time to process a</span><span class="x">
+</span><span class="c">// SpanData, that work should be done on another goroutine.</span><span class="x">
+</span><span class="c">//</span><span class="x">
+</span><span class="c">// The SpanData should not be modified, but a pointer to it can be kept.</span><span class="x">
+</span><span class="k">type</span><span class="x"> </span><span class="n">Exporter</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="n">ExportSpan</span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="o">*</span><span class="n">SpanData</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// opentracing tracer
+
+type Tracer interface {
+	// Create, start, and return a new Span with the given `operationName` and
+	// incorporate the given StartSpanOption `opts`. (Note that `opts` borrows
+	// from the "functional options" pattern, per
+	// https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
+	//
+	// A Span with no SpanReference options (e.g., opentracing.ChildOf() or
+	// opentracing.FollowsFrom()) becomes the root of its own trace.
+	//
+	StartSpan(operationName string, opts ...StartSpanOption) Span
+
+	// Inject() takes the `sm` SpanContext instance and injects it for
+	// propagation within `carrier`. The actual type of `carrier` depends on
+	// the value of `format`.
+	//
+	// OpenTracing defines a common set of `format` values (see BuiltinFormat),
+	// and each has an expected carrier type.
+	//
+	// Other packages may declare their own `format` values, much like the keys
+	// used by `context.Context` (see
+	// https://godoc.org/golang.org/x/net/context#WithValue).
+	//
+	Inject(sm SpanContext, format interface{}, carrier interface{}) error
+
+	// Extract() returns a SpanContext instance given `format` and `carrier`.
+	//
+	// OpenTracing defines a common set of `format` values (see BuiltinFormat),
+	// and each has an expected carrier type.
+	//
+	// Other packages may declare their own `format` values, much like the keys
+	// used by `context.Context` (see
+	// https://godoc.org/golang.org/x/net/context#WithValue).
+	//
+	Extract(format interface{}, carrier interface{}) (SpanContext, error)
+}
+</code></pre></div></div>
+<p>OpenTracing doesn’t care about exporter and tracers, something else handle that
+complexity, (the user, me.. bored) the standard only offers interfaces. I don’t
+know if this is good. It really looks a lot more like a common interface
+between traces. I like the idea, but I need a lot more.</p>
+
+<p>Now, writing this article I understood that I have a lot more to figure out
+about this projects, sadly I realized that in practice they are even more
+similar compared my feeling before writing all this down.</p>
+
+<p>Tracing, metrics and instrumentation libraries remain crucial from my point of
+view. You can write everything you want but if you are not able to understand
+what’s happening you are not making a good job. You look like a monkey.</p>
+
+<p>Personal I would like to find a common and good library to wrap together all
+the buzzwords stats, spans, traces, metrics, time series, logs because they are
+all the same concept just from a different point of view.</p>
+
+<p>Everything is a point in time, grouped, ordered or with a specific hierarchy.
+You can use them as aggregate, to compare, to alert and so on. A powerful
+implementation should be able to combine both needs an easy ingestion with a
+clear output.</p>
+
+<p>I think that OpenTracing has a lot to do from both sides in and out. OpenCensus
+looks good from an ingestion point of view. Nothing about logs in OpenCensus
+maybe because they are good enough as they are but we need to be able to cross
+reference logs, traces, metrics from infrastructure and application events from
+dashboards and automatic tools.</p>
+
+<p>It looks like, with both setup, that you still need a platform capable to serve
+and use this data. A lot of people will answer that it’s out of scope for
+these projects, but I am pretty sure we all learned that just storing events is
+not enough.</p>
+
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/what-is-distributed-tracing-opentracing-opencensus';
+    this.page.identifier = 'https://gianarb.it/blog/what-is-distributed-tracing-opentracing-opencensus';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

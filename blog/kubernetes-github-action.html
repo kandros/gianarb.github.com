@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>GitHub actions to deliver on kubernetes</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="GitHub recently released a new feature called GitHub Actions. They are a serverless approach to allow developers to run their own code based on what happens to a particular repository. They are amazing for continuous integration and delivery. I used them to deploy and validate kubernetes code.">
+    <meta name="keywords" content="kubernetes, github action, serverless, ci, automation">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/kubernetes-github-action">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="GitHub actions to deliver on kubernetes">
+    <meta name='twitter:description' content="GitHub recently released a new feature called GitHub Actions. They are a serverless approach to allow developers to run their own code based on what happens to a particular repository. They are amazing for continuous integration and delivery. I used them to deploy and validate kubernetes code.">
+
+    <meta property="og:title" content="GitHub actions to deliver on kubernetes" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/kubernetes-github-action" />
+    <meta property="og:description" content="GitHub recently released a new feature called GitHub Actions. They are a serverless approach to allow developers to run their own code based on what happens to a particular repository. They are amazing for continuous integration and delivery. I used them to deploy and validate kubernetes code." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+
+    <meta property="og:image" content="" />
+    <meta name='twitter:image' content="https://gianarb.it/img/hero/action.jpg">
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="GitHub actions to deliver on kubernetes">
+    <meta name="twitter:description" content="GitHub recently released a new feature called GitHub Actions. They are a serverless approach to allow developers to run their own code based on what happens to a particular repository. They are amazing for continuous integration and delivery. I used them to deploy and validate kubernetes code.">
+    <meta name="twitter:image:src" content="https://gianarb.it">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+<style>
+.bgimage {
+  background-image: url('/img/hero/action.jpg');
+}
+</style>
+<section class="bgimage">
+</section>
+
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>GitHub actions to deliver on kubernetes</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">22 Jan 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Six minute read</span>
+ · kubernetes, github action, serverless, ci, automation</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Recently GitHub released a new feature called Actions. To me, it looks like the
+best implementation I can think of for serverless.  I used AWS Lambda and API
+Gateway for some basic API, and I wrote a prototype of an application capable of
+running functions using containers called
+<a href="https://github.com/gianarb/gourmet">gourmet</a> I don’t buy the fact that it will
+make my code easy to manage. At least not to write API or web applications.</p>
+
+<blockquote class="twitter-tweet tw-align-center"><p lang="en" dir="ltr">I used the <a href="https://twitter.com/hashtag/GitHubActions?src=hash&amp;ref_src=twsrc%5Etfw">#GitHubActions</a>
+to verify and deploy code to a <a href="https://twitter.com/hashtag/kubernetes?src=hash&amp;ref_src=twsrc%5Etfw">#kubernetes</a>
+cluster <a href="https://t.co/nfkjmYKPKs">https://t.co/nfkjmYKPKs</a> I am
+impressed about how wonderful this feature is designed and implemented! <a href="https://twitter.com/github?ref_src=twsrc%5Etfw">@Github</a> you
+🤘!</p>&mdash; :w !sudo tee % (@GianArb) <a href="https://twitter.com/GianArb/status/1087640589838008321?ref_src=twsrc%5Etfw">January
+22, 2019</a></blockquote>
+<script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<p>That’s why I like what GitHub did because they used serverless for what I think
+it is designed for, extensibility.</p>
+
+<p>GitHub Actions just like Lambda functions on AWS are a powerful and managed way
+to extend their product straightforwardly.</p>
+
+<p>With AWS Lambda you can hook your code to almost whatever event happens: EC2
+creations, termination, route53 DNS record change and a lot more. You don’t need
+to run a server, you load your code, and it just works.</p>
+
+<p>Jess Frazelle wrote a blog post about <a href="https://blog.jessfraz.com/post/the-life-of-a-github-action/">“The Life of a GitHub
+Action</a>, and I
+decided to try something I had my mind since a couple of weeks but it required a
+CI server, and it was already too much for me.</p>
+
+<p>Time to time I like the idea to have a kubernetes cluster that I can use for the
+testing purpose, so I created a private repository that it is not ready to be
+open source because it is a mess with secrets inside and so on.</p>
+
+<p><img src="/img/sorry.jpg" alt="" /></p>
+
+<p>In any case, to give you an idea, this is the project’s folder:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>├── .github
+│   ├── actions
+│   │   ├── deploy
+│   │   │   ├── deploy
+│   │   │   └── Dockerfile
+│   │   └── dryrun
+│   │       ├── Dockerfile
+│   │       └── dryrun
+│   └── main.workflow
+└── kubernetes
+    ├── digitalocean.yaml
+    ├── external-dns.yaml
+    ├── micro.yaml
+    ├── namespaces.yaml
+    ├── nginx.yaml
+    └── openvpn.yaml
+</code></pre></div></div>
+<p>The <code class="highlighter-rouge">kubernetes</code> directory contains all the things I would like to install in my
+cluster.  For every new push on this repository, I would like to check if it can
+be applied to the kubernetes cluster with the command <code class="highlighter-rouge">kubectl apply -f
+./kubernetes --dryrun</code> and when the PR is merged the changes should get applied.</p>
+
+<p>So I created my workflow in <code class="highlighter-rouge">.github/main.workflow</code>: ( I left some comment to
+make it understandable)</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>## Workflow defines what we want to call a set of actions.
+
+## For every new push check if the changes can be applied to kubernetes ## using the action called: kubectl dryrun
+workflow "after a push check if they apply to kubernetes" {
+  on = "push"
+  resolves = ["kubectl dryrun"]
+}
+
+## When a PR is merged trigger the action: kubectl deploy. To apply the new code to master.
+workflow "on merge to master deploy on kubernetes" {
+  on = "pull_request"
+  resolves = ["kubectl deploy"]
+}
+
+## This is the action that checks if the push can be applied to kubernetes
+action "kubectl dryrun" {
+  uses = "./.github/actions/dryrun"
+  secrets = ["KUBECONFIG"]
+}
+
+## This is the action that applies the change to kubernetes
+action "kubectl deploy" {
+  uses = "./.github/actions/deploy"
+  secrets = ["KUBECONFIG"]
+}
+</code></pre></div></div>
+<p>The <code class="highlighter-rouge">secrets</code> are an array of environment variables that you can use to set
+values from the outside. If your account has GitHub Action enabled there is a
+new Tag inside the Settings in every repository called “Secrets.”</p>
+
+<p>You can set key-value pairs usable as you see in my workflow. For this example,
+I set the <code class="highlighter-rouge">KUBECONFIG</code> as the base64 of a kubeconfig file that allows the GitHub
+Action to authorize itself to my Kubernetes cluster.</p>
+
+<p>Both actions are similar the first one is in the directory
+<code class="highlighter-rouge">.github/actions/dryrun</code></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>├── .github
+    ├── actions
+        └── dryrun
+            ├── Dockerfile
+            └── dryrun
+</code></pre></div></div>
+<p>It contains a Dockerfile</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>FROM alpine:latest
+
+## The action name displayed by GitHub
+LABEL "com.github.actions.name"="kubectl dryrun"
+## The description for the action
+LABEL "com.github.actions.description"="Check the kubernetes change to apply."
+## https://developer.github.com/actions/creating-github-actions/creating-a-docker-container/#supported-feather-icons
+LABEL "com.github.actions.icon"="check"
+## The color of the action icon
+LABEL "com.github.actions.color"="blue"
+
+RUN     apk add --no-cache \
+        bash \
+        ca-certificates \
+        curl \
+        git \
+        jq
+
+RUN curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kubectl &amp;&amp; \
+  chmod +x /usr/bin/kubectl &amp;&amp; \
+  kubectl version --client
+
+COPY dryrun /usr/bin/dryrun
+CMD ["dryrun"]
+</code></pre></div></div>
+
+<p>As you can see to describe an action, you need just a Dockerfile, and it works
+the same as in docker. The CMD <code class="highlighter-rouge">dryrun</code> is the bash script I copied here:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+
+main<span class="o">(){</span>
+    <span class="nb">echo</span> <span class="s2">"&gt;&gt;&gt;&gt; Action started"</span>
+    <span class="c"># Decode the secret passed by the action and paste the config in a file.</span>
+    <span class="nb">echo</span> <span class="nv">$KUBECONFIG</span> | base64 <span class="nt">-d</span> <span class="o">&gt;</span> ./kubeconfig.yaml
+    <span class="nb">echo</span> <span class="s2">"&gt;&gt;&gt;&gt; kubeconfig created"</span>
+    <span class="c"># Check if the kubernetes directory has change</span>
+    <span class="nv">diff</span><span class="o">=</span><span class="k">$(</span>git diff <span class="nt">--exit-code</span> HEAD~1 HEAD ./kubernetes<span class="k">)</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-eq</span> 1 <span class="o">]</span><span class="p">;</span> <span class="k">then
+        </span><span class="nb">echo</span> <span class="s2">"&gt;&gt;&gt;&gt; Detected a change inside the kubernetes directory"</span>
+        <span class="c"># Apply the changes with --dryrun just to validate them</span>
+        kubectl apply <span class="nt">--kubeconfig</span> ./kubeconfig.yaml <span class="nt">--dry-run</span> <span class="nt">-f</span> ./kubernetes
+    <span class="k">else
+        </span><span class="nb">echo</span> <span class="s2">"&gt;&gt;&gt;&gt; No changed detected inside the ./kubernetes folder. Nothing to do."</span>
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+main <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
+</code></pre></div></div>
+<p>The second action is almost the same as this one, the Dockerfile is THE same, so
+I am not posting it here, but the CMD looks like this:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+
+main<span class="o">(){</span>
+    <span class="c"># Decode the secret passed by the action and paste the config in a file.</span>
+    <span class="nb">echo</span> <span class="nv">$KUBECONFIG</span> | base64 <span class="nt">-d</span> <span class="o">&gt;</span> ./kubeconfig.yaml
+     <span class="c"># Check if it is an event generated by the PR is a merge</span>
+    <span class="nv">merged</span><span class="o">=</span><span class="k">$(</span>jq <span class="nt">--raw-output</span> .pull_request.merged <span class="s2">"</span><span class="nv">$GITHUB_EVENT_PATH</span><span class="s2">"</span><span class="k">)</span>
+    <span class="c"># Retrieve the base branch for the PR because I would like to apply only PR merged to master</span>
+    <span class="nv">baseRef</span><span class="o">=</span><span class="k">$(</span>jq <span class="nt">--raw-output</span> .pull_request.base.ref <span class="s2">"</span><span class="nv">$GITHUB_EVENT_PATH</span><span class="s2">"</span><span class="k">)</span>
+
+    <span class="k">if</span> <span class="o">[[</span> <span class="s2">"</span><span class="nv">$merged</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">"true"</span> <span class="o">]]</span> <span class="o">&amp;&amp;</span> <span class="o">[[</span> <span class="s2">"</span><span class="nv">$baseRef</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">"master"</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then
+        </span><span class="nb">echo</span> <span class="s2">"&gt;&gt;&gt;&gt; PR merged into master. Shipping to k8s!"</span>
+        kubectl apply <span class="nt">--kubeconfig</span> ./kubeconfig.yaml <span class="nt">-f</span> ./kubernetes
+    <span class="k">else
+        </span><span class="nb">echo</span> <span class="s2">"&gt;&gt;&gt;&gt; Nothing to do here!"</span>
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+main <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
+</code></pre></div></div>
+<p>That’s everything, and I am thrilled!</p>
+
+<p><img src="/img/party.jpg" alt="" /></p>
+
+<p>There is nothing more to say other than “GitHub actions are amazing!”. They look
+well designed since day! The workflow file has a generator that even if I didn’t
+use it because I don’t like colors, it seems amazing. The secrets allow us to do
+integration with third-party services out of the box and you can use bash to do
+whatever you like! Let me know what you use them for on
+<a href="https://twitter.com/gianarb">Twitter</a>.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/kubernetes-github-action';
+    this.page.identifier = 'https://gianarb.it/blog/kubernetes-github-action';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

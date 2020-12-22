@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Zf2 Event, base use</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Integrate in your application an event system is a good way to decouple and extend your application keeping it clean and clear. An event manager allow you to trigger and catch event based on what your application do. You can for example send different kind of notifications like email, slack message and so on from the same event like 'user registration'. Zend Framework a popular and open source PHP framework has a component called EventManager that helps you do integrate such flow.">
+    <meta name="keywords" content="zf2, php, open source, development, event source, event manager, Zend Framework, EventManager">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/Zf2-Event-base-use">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Zf2 Event, base use">
+    <meta name='twitter:description' content="Integrate in your application an event system is a good way to decouple and extend your application keeping it clean and clear. An event manager allow you to trigger and catch event based on what your application do. You can for example send different kind of notifications like email, slack message and so on from the same event like 'user registration'. Zend Framework a popular and open source PHP framework has a component called EventManager that helps you do integrate such flow.">
+
+    <meta property="og:title" content="Zf2 Event, base use" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/Zf2-Event-base-use" />
+    <meta property="og:description" content="Integrate in your application an event system is a good way to decouple and extend your application keeping it clean and clear. An event manager allow you to trigger and catch event based on what your application do. You can for example send different kind of notifications like email, slack message and so on from the same event like 'user registration'. Zend Framework a popular and open source PHP framework has a component called EventManager that helps you do integrate such flow." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/zf.jpg" />
+    <meta name='twitter:image' content="https://gianarb.it/img/zf.jpg">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Zf2 Event, base use">
+    <meta name="twitter:description" content="Integrate in your application an event system is a good way to decouple and extend your application keeping it clean and clear. An event manager allow you to trigger and catch event based on what your application do. You can for example send different kind of notifications like email, slack message and so on from the same event like 'user registration'. Zend Framework a popular and open source PHP framework has a component called EventManager that helps you do integrate such flow.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/zf.jpg">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Zf2 Event, base use</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">21 Nov 2013 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">One minute read</span>
+ · zf2, php, open source, development, event source, event manager, Zend Framework, EventManager</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Hi! Some mouths ago I have writted a gist for help me to remember a base use of
+Events and Event Manager into Zend Fremework, in this article I report this
+small tutorial.</p>
+
+<figure class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="k">require_once</span> <span class="nx">__DIR__</span><span class="o">.</span><span class="s2">"/vendor/autoload.php"</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">Foo</span>
+<span class="p">{</span>
+    <span class="cm">/* @var \Zend\EventManager\EventManagerInterface */</span>
+    <span class="k">protected</span> <span class="nv">$eventManager</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="nf">getEventManager</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">eventManager</span> <span class="nx">instanceof</span> <span class="nx">\Zend\EventManager\EventManagerInterface</span><span class="p">){</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">eventManager</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\Zend\EventManager\EventManager</span><span class="p">();</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">eventManager</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="nf">echoHello</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">getEventManager</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">trigger</span><span class="p">(</span><span class="nx">__FUNCTION__</span><span class="o">.</span><span class="s2">"_pre"</span><span class="p">,</span> <span class="nv">$this</span><span class="p">);</span>
+        <span class="k">echo</span> <span class="s2">"Hello"</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">getEventManager</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">trigger</span><span class="p">(</span><span class="nx">__FUNCTION__</span><span class="o">.</span><span class="s2">"_post"</span><span class="p">,</span> <span class="nv">$this</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nv">$foo</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Foo</span><span class="p">();</span>
+<span class="nv">$foo</span><span class="o">-&gt;</span><span class="na">getEventManager</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">attach</span><span class="p">(</span><span class="s1">'echoHello_pre'</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="nv">$e</span><span class="p">){</span>
+    <span class="k">echo</span> <span class="s2">"Wow! "</span><span class="p">;</span>
+<span class="p">});</span>
+<span class="nv">$foo</span><span class="o">-&gt;</span><span class="na">getEventManager</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">attach</span><span class="p">(</span><span class="s1">'echoHello_post'</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="nv">$e</span><span class="p">){</span>
+    <span class="k">echo</span> <span class="s2">". This example is very good! </span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="p">});</span>
+<span class="nv">$foo</span><span class="o">-&gt;</span><span class="na">getEventManager</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">attach</span><span class="p">(</span><span class="s1">'echoHello_post'</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="nv">$e</span><span class="p">){</span>
+    <span class="k">echo</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">by gianarb92@gmail.com </span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="p">},</span> <span class="o">-</span><span class="mi">10</span><span class="p">);</span>
+<span class="nv">$foo</span><span class="o">-&gt;</span><span class="na">echoHello</span><span class="p">();</span></code></pre></figure>
+
+<p>The result:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">gianarb@GianArb-2 eventTest :<span class="o">)</span> <span class="nv">$ </span>php try.php
+Wow! Hello. This example is very good!
+
+by gianarb92@gmail.com</code></pre></figure>
+
+<p><a href="https://framework.zend.com/manual/2.0/en/modules/zend.event-manager.event-manager.html">@see Zend Event Manager Ref</a></p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/Zf2-Event-base-use';
+    this.page.identifier = 'https://gianarb.it/blog/Zf2-Event-base-use';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

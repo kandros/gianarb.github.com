@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Why code instrumentation?</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="I decided to finally create a category about code instrumentation. Because I am a develop. And I think it matters. It is important to write better code and more reliability application that we can learn from.">
+    <meta name="keywords" content="golang, codeinstrumentation, o11y, opentelemetry, opentracing, prometheus, sre">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/why-code-instrumentation">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Why code instrumentation?">
+    <meta name='twitter:description' content="I decided to finally create a category about code instrumentation. Because I am a develop. And I think it matters. It is important to write better code and more reliability application that we can learn from.">
+
+    <meta property="og:title" content="Why code instrumentation?" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/why-code-instrumentation" />
+    <meta property="og:description" content="I decided to finally create a category about code instrumentation. Because I am a develop. And I think it matters. It is important to write better code and more reliability application that we can learn from." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/got-your-back.jpg" />
+    <meta name='twitter:image' content="https://gianarb.it/img/got-your-back.jpg">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Why code instrumentation?">
+    <meta name="twitter:description" content="I decided to finally create a category about code instrumentation. Because I am a develop. And I think it matters. It is important to write better code and more reliability application that we can learn from.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/got-your-back.jpg">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Why code instrumentation?</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">29 Mar 2020 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Three minute read</span>
+ · golang, codeinstrumentation, o11y, opentelemetry, opentracing, prometheus, sre</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>I am writing this blog post as a common introduction for a new category I would
+like to write about consistently on my blog. If this is the first time you land
+here this is my blog, and I write about everything that catches my attention but
+sometime earlier sometime later on I realize I can group my posts in categories,
+and that’s what I am doing now.</p>
+
+<p>Some of them are: <a href="/planet/assemble-kubernetes.html">Assemble Kubernetes</a>,
+<a href="/planet/docker.html">Docker</a>, <a href="/planet/mockmania.html">MockMania</a>. This one
+will be called <code class="highlighter-rouge">Code Instrumentation</code>.</p>
+
+<p>There are a lot of people writing about observability, monitoring and I did it
+for the last 3 years as well. I learned a lot along the way but what I think is
+crucial is that developers has to write code that is
+understandable and easy to debug where it is more valuable, in production. And
+if an application or a system is hard to figure out we as a developer play a
+mojor role on it.</p>
+
+<p>That’s why Site Reliability Engineering (SRE) is not related to ops, servers,
+Kubernetes but it is something that plays its match in your code.</p>
+
+<p>What’s why I think SRE and DevOps are different, not at all connected.</p>
+
+<p>The technologies that are leading the landscape are:</p>
+
+<ol>
+  <li>Prometheus but not the time series database, their client libraries and the
+exposition format, now branded from the community and the Cloud Native
+Computing Foundation (CNCF) as OpenMetrics</li>
+  <li>OpenTracing, OpenCensus and OpenTelemetry. They are part of the same bullet
+points because I think about them as the consequence of each other since what
+I hope is “THE LAST ONE”, OpenTelemetry. They are instrumentation libraries
+and specification to increase interoperability and to avoid vendor lock-in
+for what concerns distributed tracing and metrics. I hope logs will jump
+onboard at some point</li>
+</ol>
+
+<h2 id="prometheus-and-openmetrics">Prometheus and OpenMetrics</h2>
+
+<p>I wrote about this topic previously, so have a look there if you do not know
+what I am speaking about.</p>
+
+<p>I think they are worth to mention here because that’s how I learned the effect
+of good or bad code instrumentation, and the fact that it has to happen in your
+code, when you develop it.</p>
+
+<p>It has the same weight has writing a good data structure, writing solid unit
+tests, or picking the right design pattern.</p>
+
+<h2 id="opentelemetry-otel">OpenTelemetry (otel)</h2>
+
+<p>As I said I will refer to otel when I can, not because I think OpenTracing or
+OpenCensus is bad, but because I do not see this as a religion, but for me it is
+a technical problem, they is well spread and it has to find a good answer.</p>
+
+<p>Those communities decided to merge to otel in the way they are doing, good or
+bad? We can get a beer at some point and I will tell you. It is out of scope.</p>
+
+<h2 id="what-i-am-gonna-talk-about">What I am gonna talk about</h2>
+
+<p>This is a long new category introduction blog post probably but that’s it. Over
+the last two years I tried to share what I experienced around this topic with a
+workshop called: “Application Monitoring”. A lot of the articles that I will
+write comes from there, and it is an attempt to share what I think worked or
+failed.</p>
+
+<h2 id="links">Links</h2>
+
+<ul>
+  <li><a href="/planet/code-instrumentation.html">All about Code Instrumentation</a> from my blog</li>
+  <li><a href="https://github.com/gianarb/shopmany">ShopMany</a> is the application I developed for the workshop</li>
+  <li><a href="https://github.com/gianarb/workshop-observability">Workshop notes</a> contains notes, exercises and solutions for the lessons I
+proposed in the workshop itself</li>
+  <li><a href="https://www.honeycomb.io/blog/">honeycomb</a> because when you speak about o11y you have to quote them!</li>
+  <li><a href="/tinyletter.html">My newsletter</a> is probably the best way to stay in touch with the content I
+create</li>
+  <li><a href="https://twitter.com/gianarb">Twitter</a> is the best way to stay in touch with me</li>
+</ul>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/why-code-instrumentation';
+    this.page.identifier = 'https://gianarb.it/blog/why-code-instrumentation';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

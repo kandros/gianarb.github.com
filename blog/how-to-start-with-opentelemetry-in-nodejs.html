@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>How to start tracing with OpenTelemetry in NodeJS?</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="I developed an eight hours workshop about application monitoring and code instrumentation two years ago. This year I updated it to use OpenTelemetry and that's what I learned to instrument a NodeJS application.">
+    <meta name="keywords" content="nodejs, codeinstrumentation, opentelemetry, tracing">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/how-to-start-with-opentelemetry-in-nodejs">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="How to start tracing with OpenTelemetry in NodeJS?">
+    <meta name='twitter:description' content="I developed an eight hours workshop about application monitoring and code instrumentation two years ago. This year I updated it to use OpenTelemetry and that's what I learned to instrument a NodeJS application.">
+
+    <meta property="og:title" content="How to start tracing with OpenTelemetry in NodeJS?" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/how-to-start-with-opentelemetry-in-nodejs" />
+    <meta property="og:description" content="I developed an eight hours workshop about application monitoring and code instrumentation two years ago. This year I updated it to use OpenTelemetry and that's what I learned to instrument a NodeJS application." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/logo/otel-black-stacked.svg" />
+    <meta name='twitter:image' content="https://gianarb.it/img/logo/otel-black-stacked.svg">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="How to start tracing with OpenTelemetry in NodeJS?">
+    <meta name="twitter:description" content="I developed an eight hours workshop about application monitoring and code instrumentation two years ago. This year I updated it to use OpenTelemetry and that's what I learned to instrument a NodeJS application.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/logo/otel-black-stacked.svg">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>How to start tracing with OpenTelemetry in NodeJS?</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">07 Apr 2020 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Nine minute read</span>
+ · nodejs, codeinstrumentation, opentelemetry, tracing</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>This post is to celebrate the first beta release for the OpenTelemetry NodeJS
+application <i class="fas fa-glass-cheers"></i></p>
+
+<p>Recently I developed a workshop about code instrumentation and application
+monitoring. It is an 8 hours full immersion on logs, metrics, tracing and so on.
+I developed it last year and I gave it twice. Let me know if you are looking for
+something like that.</p>
+
+<p>Almost all of it is opensource but I didn’t figure out a good way to make it
+usable without my brain for now. This year I updated it to use OpenTelemetry and
+InfluxDB v2.</p>
+
+<p>Anyway the application is called
+<a href="https://github.com/gianarb/shopmany">ShopMany</a>. This application does
+not return any useful information about its state. It is an e-commerce made of a
+bunch of services in various languages. Obviously one of them is in NodeJS and
+that’s the one I am gonna show you today.</p>
+
+<p><strong>Discaimer</strong>: I can not define myself as a NodeJS developer. I wrote a bunch of
+AngularJS single page application back in the day, I wrote some Cordova mobile
+applications ages ago. I am not writing any JS production code since 2015 more
+or less.</p>
+
+<h2 id="first-approach">First approach</h2>
+
+<p>I concluded the application instrumentation it was the day the maintainers
+tagged the first beta release. Overnight I had to update libraries and test
+code. Very luckily.</p>
+
+<p>The way I learned about how to properly instrument
+<a href="https://github.com/gianarb/shopmany/tree/master/discount">discount</a> required a
+lot of digging in the actual
+<a href="https://github.com/open-telemetry/opentelemetry-js">opentelemery-js</a> but
+luckily for us it has a lot of examples and the library is designed to load a
+bunch of useful modules that are able to instrument the application by itself.
+The community is very helpful and you can chat via
+<a href="https://gitter.im/open-telemetry/opentelemetry-js">Gitter</a>.</p>
+
+<h2 id="getting-started">Getting Started</h2>
+
+<p>I am using ExpressJS and OpenTelemetry has a plugin for it that you can load,
+and it instruments the app by itself, same for MongoDB that is the packaged I am
+using.</p>
+
+<p>Those are the dependencies I installed in my applications, all of them are
+provided by the repository I linked above:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>"@opentelemetry/api": "^0.5.0",
+"@opentelemetry/exporter-jaeger": "^0.5.0",
+"@opentelemetry/node": "^0.5.0",
+"@opentelemetry/plugin-http": "^0.5.0",
+"@opentelemetry/plugin-mongodb": "^0.5.0",
+"@opentelemetry/tracing": "^0.5.0",
+"@opentelemetry/plugin-express": "^0.5.0",
+</code></pre></div></div>
+
+<p>I created a <code class="highlighter-rouge">./tracer.js</code> file that initialize the tracer, I have added inline
+documentation to explain the crucial part of it:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s1">'use strict'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">opentelemetry</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'@opentelemetry/api'</span><span class="p">);</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">NodeTracerProvider</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'@opentelemetry/node'</span><span class="p">);</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">SimpleSpanProcessor</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'@opentelemetry/tracing'</span><span class="p">);</span>
+<span class="c1">// I am using Jaeger as exporter</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">JaegerExporter</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'@opentelemetry/exporter-jaeger'</span><span class="p">);</span>
+
+<span class="c1">// This is not mandatory, by default httptrace propagation is used</span>
+<span class="c1">// but it is not well supported by the PHP ecosystem and I have</span>
+<span class="c1">// a PHP service to instrument. I discovered B3 is supported</span>
+<span class="c1">// form all the languages I where intrumenting</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">B3Propagator</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'@opentelemetry/core'</span><span class="p">);</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">serviceName</span><span class="p">,</span> <span class="nx">jaegerHost</span><span class="p">,</span> <span class="nx">logger</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// A lot of those plugins are automatically loaded when you install them</span>
+  <span class="c1">// So if you do not use express for example you do not have to enable all</span>
+  <span class="c1">// those plugins manually. But Express is not auto enabled so I had to add them</span>
+  <span class="c1">// all</span>
+  <span class="kd">const</span> <span class="nx">provider</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">NodeTracerProvider</span><span class="p">({</span>
+    <span class="na">plugins</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">mongodb</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">enabled</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="na">path</span><span class="p">:</span> <span class="s1">'@opentelemetry/plugin-mongodb'</span><span class="p">,</span>
+      <span class="p">},</span>
+      <span class="na">http</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">enabled</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="na">path</span><span class="p">:</span> <span class="s1">'@opentelemetry/plugin-http'</span><span class="p">,</span>
+          <span class="c1">// I didn't do it in my example but it is a good idea to ignore health</span>
+          <span class="c1">// endpoint or others if you do not need to trace them.</span>
+          <span class="na">ignoreIncomingPaths</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s1">'/'</span><span class="p">,</span>
+            <span class="s1">'/health'</span>
+          <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="na">express</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">enabled</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="na">path</span><span class="p">:</span> <span class="s1">'@opentelemetry/plugin-express'</span><span class="p">,</span>
+      <span class="p">},</span>
+    <span class="p">}</span>
+  <span class="p">});</span>
+
+  <span class="c1">// Here is where I configured the exporter, setting the service name</span>
+  <span class="c1">// and the jaeger host. The logger is helpful to track errors from the</span>
+  <span class="c1">// exporter itself</span>
+  <span class="kd">let</span> <span class="nx">exporter</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">JaegerExporter</span><span class="p">({</span>
+    <span class="na">logger</span><span class="p">:</span> <span class="nx">logger</span><span class="p">,</span>
+    <span class="na">serviceName</span><span class="p">:</span> <span class="nx">serviceName</span><span class="p">,</span>
+    <span class="na">host</span><span class="p">:</span> <span class="nx">jaegerHost</span>
+  <span class="p">});</span>
+
+  <span class="nx">provider</span><span class="p">.</span><span class="nx">addSpanProcessor</span><span class="p">(</span><span class="k">new</span> <span class="nx">SimpleSpanProcessor</span><span class="p">(</span><span class="nx">exporter</span><span class="p">));</span>
+  <span class="nx">provider</span><span class="p">.</span><span class="nx">register</span><span class="p">({</span>
+    <span class="na">propagator</span><span class="p">:</span> <span class="k">new</span> <span class="nx">B3Propagator</span><span class="p">(),</span>
+  <span class="p">});</span>
+  <span class="c1">// Set the global tracer so you can retrieve it from everywhere else in the</span>
+  <span class="c1">// app</span>
+  <span class="k">return</span> <span class="nx">opentelemetry</span><span class="p">.</span><span class="nx">trace</span><span class="p">.</span><span class="nx">getTracer</span><span class="p">(</span><span class="s2">"discount"</span><span class="p">);</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>You will be thinking, that’s too easy! You are right, the nature of NodeJS
+makes tracing very code agnostic. With this configuration you get a lot “for
+free”.</p>
+
+<p>You get a bunch of spans for every http request that ExpressJS serves, plus a
+span for every MongoDB query. All of them with useful information like the
+status code, path, user agents, query statements and so on.</p>
+
+<p>We have to include it in our <code class="highlighter-rouge">./server.js</code> the entrypoint for our nodejs
+application:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s1">'use strict'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">url</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">DISCOUNT_MONGODB_URL</span> <span class="o">||</span> <span class="s1">'mongodb://discountdb:27017'</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">jaegerHost</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">JAEGER_HOST</span> <span class="o">||</span> <span class="s1">'jaeger'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">logger</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'pino'</span><span class="p">)()</span>
+
+<span class="c1">// Import and initialize the tracer</span>
+<span class="kd">const</span> <span class="nx">tracer</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'./tracer'</span><span class="p">)(</span><span class="s1">'discount'</span><span class="p">,</span> <span class="nx">jaegerHost</span><span class="p">,</span> <span class="nx">logger</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"express"</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">();</span>
+
+<span class="kd">const</span> <span class="nx">MongoClient</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'mongodb'</span><span class="p">).</span><span class="nx">MongoClient</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">dbName</span> <span class="o">=</span> <span class="s1">'shopmany'</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MongoClient</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="p">{</span> <span class="na">useNewUrlParser</span><span class="p">:</span> <span class="kc">true</span> <span class="p">});</span>
+
+<span class="kd">const</span> <span class="nx">expressPino</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'express-pino-logger'</span><span class="p">)({</span>
+  <span class="na">logger</span><span class="p">:</span> <span class="nx">logger</span><span class="p">.</span><span class="nx">child</span><span class="p">({</span><span class="s2">"service"</span><span class="p">:</span> <span class="s2">"httpd"</span><span class="p">})</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>As I told you, that’s it! With this code you have enough to make your NodeJS
+application to show up in your trace.</p>
+
+<p>The instrumented version of the application is available here
+<a href="https://github.com/gianarb/shopmany/tree/discount/opentelemetry/discount">github.com/gianarb/shopmany/tree/discount/opentelemetry</a></p>
+
+<h2 id="understand-the-project">understand the project</h2>
+
+<p>I tend to checkout projects when in the process of learning how they work.
+Documentation is useful but always incomplete for such a high moving projects.</p>
+
+<p>I have to say that the scaffolding is clear even for an not fluent NodeJS
+developer like me.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ tree -L 1
+.
+├── benchmark
+├── CHANGELOG.md
+├── codecov.yml
+├── CONTRIBUTING.md
+├── doc
+├── examples
+├── getting-started
+├── karma.base.js
+├── karma.webpack.js
+├── lerna.json
+├── LICENSE
+├── package.json
+├── packages
+├── README.md
+├── RELEASING.md
+├── scripts
+├── tslint.base.js
+└── webpack.node-polyfills.js
+</code></pre></div></div>
+
+<p>I would like to define it as a monorepo, and it uses
+<a href="https://github.com/lerna/lerna">lerne</a> to delivery multiple packages from the
+same repository.</p>
+
+<p><code class="highlighter-rouge">examples</code> contains workable example of how to use the different <code class="highlighter-rouge">packages</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ tree -L 1 ./examples/
+./examples/
+├── basic-tracer-node
+├── dns
+├── express
+├── grpc
+├── grpc_dynamic_codegen
+├── http
+├── https
+├── ioredis
+├── metrics
+├── mysql
+├── opentracing-shim
+├── postgres
+├── prometheus
+├── redis
+└── tracer-web
+
+$ tree -L 1 ./packages/
+./packages/
+├── opentelemetry-api
+├── opentelemetry-base
+├── opentelemetry-context-async-hooks
+├── opentelemetry-context-base
+├── opentelemetry-context-zone
+├── opentelemetry-context-zone-peer-dep
+├── opentelemetry-core
+├── opentelemetry-exporter-collector
+├── opentelemetry-exporter-jaeger
+├── opentelemetry-exporter-prometheus
+├── opentelemetry-exporter-zipkin
+├── opentelemetry-metrics
+├── opentelemetry-node
+├── opentelemetry-plugin-dns
+├── opentelemetry-plugin-document-load
+├── opentelemetry-plugin-express
+├── opentelemetry-plugin-grpc
+├── opentelemetry-plugin-http
+├── opentelemetry-plugin-https
+├── opentelemetry-plugin-ioredis
+├── opentelemetry-plugin-mongodb
+├── opentelemetry-plugin-mysql
+├── opentelemetry-plugin-postgres
+├── opentelemetry-plugin-redis
+├── opentelemetry-plugin-user-interaction
+├── opentelemetry-plugin-xml-http-request
+├── opentelemetry-propagator-jaeger
+├── opentelemetry-resources
+├── opentelemetry-shim-opentracing
+├── opentelemetry-test-utils
+├── opentelemetry-tracing
+├── opentelemetry-web
+└── tsconfig.base.json
+</code></pre></div></div>
+
+<p>The suffix of the package helps you to figure out what they are:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">opentelemetry-plugin-*</code> usually contains the code that instrument a specific
+library, you can see here <code class="highlighter-rouge">express</code>, <code class="highlighter-rouge">http</code>, <code class="highlighter-rouge">https</code>, <code class="highlighter-rouge">dns</code>. Some plugins are
+loaded by the <code class="highlighter-rouge">NodeTracerProvider</code> by default. Other has to be specified. You
+can to relay on the code or read the documentation to figure it out. For
+example <code class="highlighter-rouge">http</code> is loaded by default but if you need <code class="highlighter-rouge">express</code> you have to load
+them up by yourself, figuring out the right dependencies. At least or now.</li>
+  <li><code class="highlighter-rouge">opentelemetry-exporter-*</code> contains various exporters for now Jaeger,
+Prometheus, Zipkin the and otel-collector.</li>
+</ul>
+
+<p>Anyway, what I am trying to say is that it is very intuitive and looking here it
+is clear what you can get from this project.</p>
+
+<h2 id="plugin">Plugin</h2>
+
+<p>NodeJS sounds very easy to instrument and on the right path to get automatic
+instrumentation right,  because you can listen from the outside to function
+call, you do not need to specifically change your code where you do a request or
+where you get one, you can add tracing in a centralized location. That’s how the
+provided plugins work.</p>
+
+<p><a href="https://github.com/othiym23/shimmer">Shimmer</a> is the library that simplify the
+trick. I recently had a chat with <a href="https://twitter.com/walterdalmut">Walter</a>
+because I know he works in NodeJS and during the experiments otel were easy
+enough to fit his use case. He is currently trying it and as he discovered that
+<a href="https://github.com/Automattic/mongoose">mongoose</a>, the ORM library he uses does
+not use the officially provided <a href="https://mongodb.github.io/node-mongodb-native/">mongodb
+driver</a> so the
+otel-plugin-mongodb where not magically tracing his requests to mongodb, sadly.
+But he is currently writing a <a href="https://github.com/wdalmut/opentelemetry-plugin-mongoose">plugin for
+that</a>, so it won’t be
+a problem pretty soon.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/how-to-start-with-opentelemetry-in-nodejs';
+    this.page.identifier = 'https://gianarb.it/blog/how-to-start-with-opentelemetry-in-nodejs';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

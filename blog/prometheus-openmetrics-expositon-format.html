@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>OpenMetrics and the future of the prometheus exposition format</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="This post explain my point of view around prometheus exposition format and it summarise the next step with OpenMetrics behing supported by CNCF and other big companies.">
+    <meta name="keywords" content="codeinstrumentation, go, open source, metrics, prometheus, influxdb, openmetrics, cncf, oss, exposition format, snmp">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/prometheus-openmetrics-expositon-format">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="OpenMetrics and the future of the prometheus exposition format">
+    <meta name='twitter:description' content="This post explain my point of view around prometheus exposition format and it summarise the next step with OpenMetrics behing supported by CNCF and other big companies.">
+
+    <meta property="og:title" content="OpenMetrics and the future of the prometheus exposition format" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/prometheus-openmetrics-expositon-format" />
+    <meta property="og:description" content="This post explain my point of view around prometheus exposition format and it summarise the next step with OpenMetrics behing supported by CNCF and other big companies." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="OpenMetrics and the future of the prometheus exposition format">
+    <meta name="twitter:description" content="This post explain my point of view around prometheus exposition format and it summarise the next step with OpenMetrics behing supported by CNCF and other big companies.">
+    <meta name="twitter:image:src" content="https://gianarb.it">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>OpenMetrics and the future of the prometheus exposition format</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">23 Aug 2018 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Eight minute read</span>
+ · codeinstrumentation, go, open source, metrics, prometheus, influxdb, openmetrics, cncf, oss, exposition format, snmp</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Who am I to tell you the future about the prometheus exposition format? Nobody!</p>
+
+<p>I was at the PromCon in Munich in August 2018 and I found the conference great!
+A lot of use cases about metrics, monitoring and prometheus itself. I work
+at InfluxData and we was there as sponsor but I followed a lot of talks and I
+had the chance to attend the developer summit the next day with a lot of
+promehteus maintainers. Really good conversarsations!</p>
+
+<blockquote class="twitter-tweet tw-align-center" data-lang="en"><p lang="en" dir="ltr">I just
+realized how lucky I was these days having chance to be so welcomed by the <a href="https://twitter.com/hashtag/prometheus?src=hash&amp;ref_src=twsrc%5Etfw">#prometheus</a>
+community. I love my work. Thanks <a href="https://twitter.com/juliusvolz?ref_src=twsrc%5Etfw">@juliusvolz</a> <a href="https://twitter.com/TwitchiH?ref_src=twsrc%5Etfw">@TwitchiH</a> <a href="https://twitter.com/tom_wilkie?ref_src=twsrc%5Etfw">@tom_wilkie</a> and
+everyone.. I feel regenerated</p>&mdash; :w !sudo tee % (@GianArb) <a href="https://twitter.com/GianArb/status/1028414240535793664?ref_src=twsrc%5Etfw">August
+11, 2018</a></blockquote>
+<script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<p>To be honest my scope few years ago was very different, I was working in PHP
+writing webapplication that yes I was deploying but I wasn’t digging to much
+around them and I was not smart enough to uderstand that all the pull vs push situation was just all garbage.
+Smoke in the eyes that luckily I left behind me pretty soon because I had the
+chance to meet smart people that drove me out.</p>
+
+<p>Provide a comfortable way for me to expose and store metrics is a vital
+request and the library needs to expose the RIGHT data it doesn’t matter if they
+are pushing or pulling.</p>
+
+<p>RIGHT means the best I can get to have more observability from an ops point of
+view, but also from a business intelligence prospetive probably just
+manipulating again the same data.</p>
+
+<p>It is safe to say that a pull based exposition format is easy to pack together
+because it works even if the server that should grab the exposed endpoint is
+unavailable or even if nothing will grab them. A push based service will always
+create some network noice even if nobody has interest on getting the metrics.</p>
+
+<p>Back in the day we had SNMP but other than being an internet standard the
+adoption is not comparable with the prometheus one, if we had how old it is and
+how fast prometheus growed the situation gets even worst.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>.1.0.0.0.1.1.0 octet_str "foo"
+.1.0.0.0.1.1.1 octet_str "bar"
+.1.0.0.0.1.102 octet_str "bad"
+.1.0.0.0.1.2.0 integer 1
+.1.0.0.0.1.2.1 integer 2
+.1.0.0.0.1.3.0 octet_str "0.123"
+.1.0.0.0.1.3.1 octet_str "0.456"
+.1.0.0.0.1.3.2 octet_str "9.999"
+.1.0.0.1.1 octet_str "baz"
+.1.0.0.1.2 uinteger 54321
+.1.0.0.1.3 uinteger 234
+</code></pre></div></div>
+
+<p>It also started as network exposing format, so it doesn’t express really well
+other kind of metrics.</p>
+
+<p>The <a href="https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md">prometheus exposition
+format</a>
+is extremly valuable and I recently instrumented a legacy application using the
+prometheus sdk and my code looks a lot more clean and readable.</p>
+
+<p>At the beginning I was using logs as transport layer for my metrics and time
+series but I ended up having a lot of spam in log themself because I was also
+streaming a lot of “not logs but metrics” garbage.</p>
+
+<p>The link to the prometheus doc above is the best place to start, here I am just
+copy pasting something form there:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{method="post",code="200"} 1027 1395066363000
+http_requests_total{method="post",code="400"}    3 1395066363000
+
+# Escaping in label values:
+msdos_file_access_time_seconds{path="C:\\DIR\\FILE.TXT",error="Cannot find file:\n\"FILE.TXT\""} 1.458255915e9
+
+# Minimalistic line:
+metric_without_timestamp_and_labels 12.47
+
+# A weird metric from before the epoch:
+something_weird{problem="division by zero"} +Inf -3982045
+
+# A histogram, which has a pretty complex representation in the text format:
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{le="0.05"} 24054
+http_request_duration_seconds_bucket{le="0.1"} 33444
+http_request_duration_seconds_bucket{le="0.2"} 100392
+http_request_duration_seconds_bucket{le="0.5"} 129389
+http_request_duration_seconds_bucket{le="1"} 133988
+http_request_duration_seconds_bucket{le="+Inf"} 144320
+http_request_duration_seconds_sum 53423
+http_request_duration_seconds_count 144320
+
+# Finally a summary, which has a complex representation, too:
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{quantile="0.01"} 3102
+rpc_duration_seconds{quantile="0.05"} 3272
+rpc_duration_seconds{quantile="0.5"} 4773
+rpc_duration_seconds{quantile="0.9"} 9001
+rpc_duration_seconds{quantile="0.99"} 76656
+rpc_duration_seconds_sum 1.7560473e+07
+rpc_duration_seconds_count 2693
+</code></pre></div></div>
+
+<p>Think about that not as the prometheus way to grab metrics, but as the language
+that your application uses to teach the outside world how does it feels.</p>
+
+<p>It is just a plain text entrypoint over HTTP that everyone can parse and re-use.</p>
+
+<p>For example
+<a href="https://www.influxdata.com/time-series-platform/kapacitor/">kapacitor</a> or
+<a href="https://www.influxdata.com/time-series-platform/telegraf/">telegraf</a> have
+specific ways to parse and extract metrics from that URL.</p>
+
+<p>If you don’t have time to write a parser for that you can use
+<a href="https://github.com/prometheus/prom2json">prom2json</a> to get a JSON version of
+that.</p>
+
+<p>In Go you can dig a bit more inside that code and reuse some of functions for
+example:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// FetchMetricFamilies retrieves metrics from the provided URL, decodes them</span><span class="x">
+</span><span class="c">// into MetricFamily proto messages, and sends them to the provided channel. It</span><span class="x">
+</span><span class="c">// returns after all MetricFamilies have been sent.</span><span class="x">
+</span><span class="k">func</span><span class="x"> </span><span class="n">FetchMetricFamilies</span><span class="p">(</span><span class="x">
+	</span><span class="n">url</span><span class="x"> </span><span class="kt">string</span><span class="p">,</span><span class="x"> </span><span class="n">ch</span><span class="x"> </span><span class="k">chan</span><span class="o">&lt;-</span><span class="x"> </span><span class="o">*</span><span class="n">dto</span><span class="o">.</span><span class="n">MetricFamily</span><span class="p">,</span><span class="x">
+	</span><span class="n">certificate</span><span class="x"> </span><span class="kt">string</span><span class="p">,</span><span class="x"> </span><span class="n">key</span><span class="x"> </span><span class="kt">string</span><span class="p">,</span><span class="x">
+	</span><span class="n">skipServerCertCheck</span><span class="x"> </span><span class="kt">bool</span><span class="p">,</span><span class="x">
+</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="k">defer</span><span class="x"> </span><span class="nb">close</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span><span class="x">
+	</span><span class="k">var</span><span class="x"> </span><span class="n">transport</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Transport</span><span class="x">
+	</span><span class="k">if</span><span class="x"> </span><span class="n">certificate</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="s">""</span><span class="x"> </span><span class="o">&amp;&amp;</span><span class="x"> </span><span class="n">key</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="s">""</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="n">cert</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">tls</span><span class="o">.</span><span class="n">LoadX509KeyPair</span><span class="p">(</span><span class="n">certificate</span><span class="p">,</span><span class="x"> </span><span class="n">key</span><span class="p">)</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="k">return</span><span class="x"> </span><span class="n">err</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="n">tlsConfig</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">tls</span><span class="o">.</span><span class="n">Config</span><span class="p">{</span><span class="x">
+			</span><span class="n">Certificates</span><span class="o">:</span><span class="x">       </span><span class="p">[]</span><span class="n">tls</span><span class="o">.</span><span class="n">Certificate</span><span class="p">{</span><span class="n">cert</span><span class="p">},</span><span class="x">
+			</span><span class="n">InsecureSkipVerify</span><span class="o">:</span><span class="x"> </span><span class="n">skipServerCertCheck</span><span class="p">,</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="n">tlsConfig</span><span class="o">.</span><span class="n">BuildNameToCertificate</span><span class="p">()</span><span class="x">
+		</span><span class="n">transport</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">http</span><span class="o">.</span><span class="n">Transport</span><span class="p">{</span><span class="n">TLSClientConfig</span><span class="o">:</span><span class="x"> </span><span class="n">tlsConfig</span><span class="p">}</span><span class="x">
+	</span><span class="p">}</span><span class="x"> </span><span class="k">else</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="n">transport</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">http</span><span class="o">.</span><span class="n">Transport</span><span class="p">{</span><span class="x">
+			</span><span class="n">TLSClientConfig</span><span class="o">:</span><span class="x"> </span><span class="o">&amp;</span><span class="n">tls</span><span class="o">.</span><span class="n">Config</span><span class="p">{</span><span class="n">InsecureSkipVerify</span><span class="o">:</span><span class="x"> </span><span class="n">skipServerCertCheck</span><span class="p">},</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="n">client</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">http</span><span class="o">.</span><span class="n">Client</span><span class="p">{</span><span class="n">Transport</span><span class="o">:</span><span class="x"> </span><span class="n">transport</span><span class="p">}</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="n">decodeContent</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="x"> </span><span class="n">url</span><span class="p">,</span><span class="x"> </span><span class="n">ch</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+<p><a href="https://github.com/prometheus/prom2json/blob/master/prom2json.go#L123">FetchMetricsFamilies</a> can be used to get a channel with all the fetched
+metrics. When you have the channel you can make what you desire:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mfChan</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="nb">make</span><span class="p">(</span><span class="k">chan</span><span class="x"> </span><span class="o">*</span><span class="n">dto</span><span class="o">.</span><span class="n">MetricFamily</span><span class="p">,</span><span class="x"> </span><span class="m">1024</span><span class="p">)</span><span class="x">
+
+</span><span class="k">go</span><span class="x"> </span><span class="k">func</span><span class="p">()</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">prom2json</span><span class="o">.</span><span class="n">FetchMetricFamilies</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="n">Args</span><span class="p">()[</span><span class="m">0</span><span class="p">],</span><span class="x"> </span><span class="n">mfChan</span><span class="p">,</span><span class="x"> </span><span class="o">*</span><span class="n">cert</span><span class="p">,</span><span class="x"> </span><span class="o">*</span><span class="n">key</span><span class="p">,</span><span class="x"> </span><span class="o">*</span><span class="n">skipServerCertCheck</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">Fatal</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}()</span><span class="x">
+
+</span><span class="n">result</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="n">prom2json</span><span class="o">.</span><span class="n">Family</span><span class="p">{}</span><span class="x">
+</span><span class="k">for</span><span class="x"> </span><span class="n">mf</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="k">range</span><span class="x"> </span><span class="n">mfChan</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">result</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="nb">append</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="x"> </span><span class="n">prom2json</span><span class="o">.</span><span class="n">NewFamily</span><span class="p">(</span><span class="n">mf</span><span class="p">))</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>As you can see
+<a href="https://github.com/prometheus/prom2json/blob/master/cmd/prom2json/main.go#L42"><code class="highlighter-rouge">prom2json</code></a>
+converts the result to JSON.</p>
+
+<p>It is pretty fleximple! And it is a common API to read applicatin status. A
+common API we all know means automation! Dope automation!</p>
+
+<h2 id="future">Future</h2>
+<p>The prometheus exposition format growed in adoption across the board and a
+couple of people leaded by <a href="https://twitter.com/TwitchiH">Richard</a> are now pushing
+to have this format as new Internet Standard!</p>
+
+<p>The project is called <a href="https://openmetrics.io/">OpenMetrics</a> and it is a Sandbox
+project under CNCF.</p>
+
+<p>if you are looking to follow the project here the official repository on
+<a href="https://github.com/OpenObservability/OpenMetric">GitHub</a>.</p>
+
+<p>Probably it looks just a political step with no value at all from a tech point of
+view but I bet when it will be a standard and not just “the prometheus
+exposition” we will start to have routers exposing stats over
+<code class="highlighter-rouge">http://192.168.1.1/metrics</code> and it will be a lot of fun!</p>
+
+<p>It will be obvious that it is not a <code class="highlighter-rouge">only-prometheus</code> feature and this new group
+has people from difference companies and backgrounds. So the exposition format
+will be probably not just for operational metrics but more generic.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/prometheus-openmetrics-expositon-format';
+    this.page.identifier = 'https://gianarb.it/blog/prometheus-openmetrics-expositon-format';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

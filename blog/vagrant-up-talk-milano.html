@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Vagrant Up, slide and first talk</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="This is my first public talk delivered at the PHP User Group Milan. It is about how to setup a local environment using Vagrant as automation tool. A well setup local environment is a must have to quick develop your application. With Vagrant you make infrastructure as a code to provision your environment. You can push your code inside a version control system such as GIT to share it with your collagues.">
+    <meta name="keywords" content="vagrant, event, devops, automation">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/vagrant-up-talk-milano">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Vagrant Up, slide and first talk">
+    <meta name='twitter:description' content="This is my first public talk delivered at the PHP User Group Milan. It is about how to setup a local environment using Vagrant as automation tool. A well setup local environment is a must have to quick develop your application. With Vagrant you make infrastructure as a code to provision your environment. You can push your code inside a version control system such as GIT to share it with your collagues.">
+
+    <meta property="og:title" content="Vagrant Up, slide and first talk" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/vagrant-up-talk-milano" />
+    <meta property="og:description" content="This is my first public talk delivered at the PHP User Group Milan. It is about how to setup a local environment using Vagrant as automation tool. A well setup local environment is a must have to quick develop your application. With Vagrant you make infrastructure as a code to provision your environment. You can push your code inside a version control system such as GIT to share it with your collagues." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/vagrant-logo.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/vagrant-logo.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Vagrant Up, slide and first talk">
+    <meta name="twitter:description" content="This is my first public talk delivered at the PHP User Group Milan. It is about how to setup a local environment using Vagrant as automation tool. A well setup local environment is a must have to quick develop your application. With Vagrant you make infrastructure as a code to provision your environment. You can push your code inside a version control system such as GIT to share it with your collagues.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/vagrant-logo.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Vagrant Up, slide and first talk</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">14 Sep 2013 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Less than one minute read</span>
+ · vagrant, event, devops, automation</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <h3>Vagrant Up</h3>
+<p>Friday 12 Sept 2013 I talked at Vagrant, tool for manage VM, these is my slide.
+I thanks <a href="https://milano.grusp.org/" target="_blank">PugMi</a> for this opportunity if you have questions I'm here! :grin: </p>
+<iframe style="display:block; margin: 0 auto;" src="https://www.slideshare.net/slideshow/embed_code/26159972" width="597" height="486" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC;border-width:1px 1px 0;margin-bottom:5px" allowfullscreen webkitallowfullscreen mozallowfullscreen> </iframe> <div style="margin-bottom:5px;text-align:center;"> <strong> <a href="https://www.slideshare.net/GianlucaArbezzano/presentazione-def-26159972" title="Vagrant - PugMI" target="_blank">Vagrant - PugMI</a> </strong> from <strong><a href="https://www.slideshare.net/GianlucaArbezzano" target="_blank">Gianluca Arbezzano</a></strong> </div>
+</br></br>
+<blockquote class="twitter-tweet" align="center"><p>quasi 30 persone a sentire <a href="https://twitter.com/GianArb">
+    @GianArb</a> parlare di <a href="https://twitter.com/search?q=%23vagrant&amp;src=hash">#vagrant</a> <a href="https://twitter.com/search?q=%23php&amp;src=hash">#php</a> <a href="https://twitter.com/search?q=%23pugMi&amp;src=hash">#pugMi</a> <a href="https://twitter.com/search?q=%23milano&amp;src=hash">#milano</a> <a href="https://t.co/75MOJiZmDZ">pic.twitter.com/75MOJiZmDZ</a></p>&mdash; Milano PHP (@MilanoPHP) <a href="https://twitter.com/MilanoPHP/statuses/378213865072656385">September 12, 2013</a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/vagrant-up-talk-milano';
+    this.page.identifier = 'https://gianarb.it/blog/vagrant-up-talk-milano';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

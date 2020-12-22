@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>testcontainer library to programmatically provision integration tests in Go with containers</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Provisioning the environment for integration tests is not easy. You need a flexible strategy to build isolated environment per test and to inject the data you need to verify your assertions. I have ported a popular library from Java to Golang called testcontainers. It wraps the Docker API in order to provide a simple test friendly library that you can use to run containers in test cases.">
+    <meta name="keywords" content="devops, infrastructure as code, docker, golang, test, integration test">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/testcontainers-go">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="testcontainer library to programmatically provision integration tests in Go with containers">
+    <meta name='twitter:description' content="Provisioning the environment for integration tests is not easy. You need a flexible strategy to build isolated environment per test and to inject the data you need to verify your assertions. I have ported a popular library from Java to Golang called testcontainers. It wraps the Docker API in order to provide a simple test friendly library that you can use to run containers in test cases.">
+
+    <meta property="og:title" content="testcontainer library to programmatically provision integration tests in Go with containers" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/testcontainers-go" />
+    <meta property="og:description" content="Provisioning the environment for integration tests is not easy. You need a flexible strategy to build isolated environment per test and to inject the data you need to verify your assertions. I have ported a popular library from Java to Golang called testcontainers. It wraps the Docker API in order to provide a simple test friendly library that you can use to run containers in test cases." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+
+    <meta property="og:image" content="" />
+    <meta name='twitter:image' content="https://gianarb.it/img/hero/testcontainers.jpeg">
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="testcontainer library to programmatically provision integration tests in Go with containers">
+    <meta name="twitter:description" content="Provisioning the environment for integration tests is not easy. You need a flexible strategy to build isolated environment per test and to inject the data you need to verify your assertions. I have ported a popular library from Java to Golang called testcontainers. It wraps the Docker API in order to provide a simple test friendly library that you can use to run containers in test cases.">
+    <meta name="twitter:image:src" content="https://gianarb.it">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+<style>
+.bgimage {
+  background-image: url('/img/hero/testcontainers.jpeg');
+}
+</style>
+<section class="bgimage">
+</section>
+
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>testcontainer library to programmatically provision integration tests in Go with containers</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">08 Jan 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Six minute read</span>
+ · devops, infrastructure as code, docker, golang, test, integration test</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>There are a lot of information in the title I know, but I am not good enough to
+make it simple.</p>
+
+<p>Back in the days, I tried to make some contribution to <a href="https://github.com/openzipkin/zipkin">OpenZipkin</a> an open
+source tracing infrastructure in Java. I never really worked in that language, and apparently, I failed, but it wasn’t all a waste of time.</p>
+
+<p>OpenZipkin has an excellent integration test suite, and I liked the approach it took to write
+integration tests for all the backends it supports MySql, ElasticSeach,
+Cassandra.</p>
+
+<p>Provision the integration test environment is complicated even when you do it
+wrong:</p>
+
+<ol>
+  <li>Without a per test isolation.</li>
+  <li>Without a cleanup process.</li>
+  <li>Without putting the right effort to have isolated tests.</li>
+</ol>
+
+<p>If you try to make integration tests in the right way, you will have a very hard
+time, but Zipkin uses a project called
+<a href="https://github.com/testcontainers/testcontainers-java">testcontainers-java</a>. It is a library
+that wraps the Docker SDK to offer a friendly API to write integration
+tests using containers.</p>
+
+<h2 id="why-containers">Why containers</h2>
+
+<p>In 2019 everyone knows the answer, containers are great for integration testings
+because they are a lightweight and flexible technology. Docker provides the
+architecture that simplifies how you can turn them on and off.</p>
+
+<p>You can spin up a bunch of containers for every integration tests, they will be
+fresh new, and you can terminate them at the end of the tests. This increases
+isolation a lot, and it makes your tests more stable and easy to reproduce.</p>
+
+<h2 id="golang">Golang</h2>
+
+<p>I develop in Go every day I loved the approach, so I decided to port that
+library to Golang and it eventually get moved to the
+<a href="https://github.com/testcontainers">testcontainers</a> GitHub
+organization under the repository <a href="https://github.com/testcontainers/testcontainers-go">testcontainers/testcontainers-go</a>.</p>
+
+<p>There is a lot to do but I think at this point the API is stable and we have
+everything we need to use it. All the rest will be driven by yourself asking for
+new features or from contributors that will port more things from the java
+project.</p>
+
+<p>This is our “Hello World.”</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span><span class="x"> </span><span class="n">main</span><span class="x">
+
+</span><span class="k">import</span><span class="x"> </span><span class="p">(</span><span class="x">
+    </span><span class="s">"context"</span><span class="x">
+    </span><span class="s">"fmt"</span><span class="x">
+    </span><span class="s">"net/http"</span><span class="x">
+    </span><span class="s">"testing"</span><span class="x">
+
+    </span><span class="n">testcontainers</span><span class="x"> </span><span class="s">"github.com/testcontainers/testcontainers-go"</span><span class="x">
+</span><span class="p">)</span><span class="x">
+
+</span><span class="c">// TestNginxLatestReturn verifies that a requesto to root returns 200 as status</span><span class="x">
+</span><span class="c">// code</span><span class="x">
+</span><span class="k">func</span><span class="x"> </span><span class="n">TestNginxLatestReturn</span><span class="p">(</span><span class="n">t</span><span class="x"> </span><span class="o">*</span><span class="n">testing</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">ctx</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Background</span><span class="p">()</span><span class="x">
+    </span><span class="c">// Request an nginx container that exposes port 80</span><span class="x">
+    </span><span class="n">req</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">testcontainers</span><span class="o">.</span><span class="n">ContainerRequest</span><span class="p">{</span><span class="x">
+        </span><span class="n">Image</span><span class="o">:</span><span class="x">        </span><span class="s">"nginx"</span><span class="p">,</span><span class="x">
+        </span><span class="n">ExposedPorts</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">"80/tcp"</span><span class="p">},</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+    </span><span class="n">nginxC</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">testcontainers</span><span class="o">.</span><span class="n">GenericContainer</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="x"> </span><span class="n">testcontainers</span><span class="o">.</span><span class="n">GenericContainerRequest</span><span class="p">{</span><span class="x">
+        </span><span class="n">ContainerRequest</span><span class="o">:</span><span class="x"> </span><span class="n">req</span><span class="p">,</span><span class="x">
+        </span><span class="n">Started</span><span class="o">:</span><span class="x">          </span><span class="no">true</span><span class="p">,</span><span class="x">
+    </span><span class="p">})</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">t</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+    </span><span class="c">// At the end of the test remove the container</span><span class="x">
+    </span><span class="k">defer</span><span class="x"> </span><span class="n">nginxC</span><span class="o">.</span><span class="n">Terminate</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span><span class="x">
+    </span><span class="c">// Retrieve the container IP</span><span class="x">
+    </span><span class="n">ip</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">nginxC</span><span class="o">.</span><span class="n">Host</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">t</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+    </span><span class="c">// Retrieve the port mapped to port 80</span><span class="x">
+    </span><span class="n">port</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">nginxC</span><span class="o">.</span><span class="n">MappedPort</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="x"> </span><span class="s">"80"</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">t</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+    </span><span class="n">resp</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">Sprintf</span><span class="p">(</span><span class="s">"http://%s:%s"</span><span class="p">,</span><span class="x"> </span><span class="n">ip</span><span class="p">,</span><span class="x"> </span><span class="n">port</span><span class="o">.</span><span class="n">Port</span><span class="p">()))</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">resp</span><span class="o">.</span><span class="n">StatusCode</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">StatusOK</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">t</span><span class="o">.</span><span class="n">Errorf</span><span class="p">(</span><span class="s">"Expected status code %d. Got %d."</span><span class="p">,</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">StatusOK</span><span class="p">,</span><span class="x"> </span><span class="n">resp</span><span class="o">.</span><span class="n">StatusCode</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>This is a straightforward test, but you can imagine a lot of other use cases. Let’s say that you need to test how your <code class="highlighter-rouge">application A</code> interact with an <code class="highlighter-rouge">application B</code> that
+depends on Redis. You can programmatically build the environment you need in the tests:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// You spin up the Redis container
+req := testcontainers.ContainerRequest{
+    Image:        "redis",
+    ExposedPorts: []string{"6379/tcp"},
+}
+redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+    ContainerRequest: req,
+    Started:          true,
+})
+if err != nil {
+    t.Error(err)
+}
+defer redisC.Terminate(ctx)
+ip, err := redisC.Host(ctx)
+if err != nil {
+    t.Error(err)
+}
+redisPort, err := redisC.MappedPort(ctx, "6479/tcp")
+if err != nil {
+    t.Error(err)
+}
+
+// Spin up Application B
+appB, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+    ContainerRequest: req,
+    Started:          true,
+    Env: map[string]string{
+        "REDIS_HOST": fmt.Sprintf("http://%s:%s", ip, redisPort.Port()),
+    },
+})
+if err != nil {
+    t.Error(err)
+}
+ipB, err := redisC.Host(ctx)
+if err != nil {
+    t.Error(err)
+}
+portB, err := redisC.MappedPort(ctx, "8081/tcp")
+if err != nil {
+    t.Error(err)
+}
+
+defer appB.Terminate(ctx)
+defer redis.Terminate(ctx)
+
+// Now you can use the go function from your application A that interact with
+// application B
+bclient := appA.NewServiceBClient(ipB, portB)
+content, err := bclient.GetKey("my-key")
+
+// Check what you need to check
+</code></pre></div></div>
+
+<h2 id="programmable-environment-is-the-key">Programmable environment is the key</h2>
+
+<p>I wrote about my relationship with <a href="/blog/infrastructure-as-real-code">infrastructure as
+code</a> in a previous article but once again
+the fact that you can programmatically build your infrastructure
+using real code is the key for all this flexibility.</p>
+
+<p>As plus for integration tests, you can build the environment you need from inside the test case itself, this ability provides significant control over it.</p>
+
+<p>If you need to worm up etcd with some data, you spin up the etcd container and
+you push your data using the traditional Go <a href="https://github.com/etcd-io/etcd/tree/master/client">etcd client</a>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// Spin up Etcd
+req := testcontainers.ContainerRequest{
+    Image:        "quay.io/coreos/etcd:latest",
+    ExposedPorts: []string{"2379/tcp"},
+}
+etcdC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+    ContainerRequest: req,
+    Started:          true,
+})
+if err != nil {
+    t.Error(err)
+}
+defer etcdC.Terminate(ctx)
+ip, err := etcdC.Host(ctx)
+if err != nil {
+    t.Error(err)
+}
+etcdPort, err := redisC.MappedPort(ctx, "2379/tcp")
+if err != nil {
+    t.Error(err)
+}
+
+// Configure the etcd client
+cfg := client.Config{
+    Endpoints:               []string{"http://" + ip + ":" + etcdPort},
+    Transport:               client.DefaultTransport,
+    // set timeout per request to fail fast when the target endpoint is unavailable
+    HeaderTimeoutPerRequest: time.Second,
+}
+c, err := client.New(cfg)
+if err != nil {
+    log.Fatal(err)
+}
+kapi := client.NewKeysAPI(c)
+
+// Set the key foo
+resp, err := kapi.Set(context.Background(), "/foo", "bar", nil)
+</code></pre></div></div>
+
+<p>I wrote this article because after a few weeks of coding and revisions I have
+finally tagged
+<a href="https://github.com/testcontainers/testcontainers-go/releases/tag/0.0.1"><code class="highlighter-rouge">v0.0.1</code></a>
+and the library is ready to be tried we need feedback and feature requests to
+Prioritize the work to do. So feel free to try it and to open GitHub
+<a href="https://github.com/testcontainers/testcontainer-go/issues">issues</a>.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/testcontainers-go';
+    this.page.identifier = 'https://gianarb.it/blog/testcontainers-go';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Be smart like your healthcheck</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="In a distributed system environment has a simple way to know the status of your server help you do understand if it's ready to go in production. HealthCheck is simple and common but design a good one can help you do avoid strange behaviors. Docker 1.12 supports healthcheck and we in this blog I share an example of implementation.">
+    <meta name="keywords" content="docker, distributed_system, distributed system, automation, devops, health check">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/be-start-like-your-healthcheck">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Be smart like your healthcheck">
+    <meta name='twitter:description' content="In a distributed system environment has a simple way to know the status of your server help you do understand if it's ready to go in production. HealthCheck is simple and common but design a good one can help you do avoid strange behaviors. Docker 1.12 supports healthcheck and we in this blog I share an example of implementation.">
+
+    <meta property="og:title" content="Be smart like your healthcheck" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/be-start-like-your-healthcheck" />
+    <meta property="og:description" content="In a distributed system environment has a simple way to know the status of your server help you do understand if it's ready to go in production. HealthCheck is simple and common but design a good one can help you do avoid strange behaviors. Docker 1.12 supports healthcheck and we in this blog I share an example of implementation." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/docker.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/docker.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Be smart like your healthcheck">
+    <meta name="twitter:description" content="In a distributed system environment has a simple way to know the status of your server help you do understand if it's ready to go in production. HealthCheck is simple and common but design a good one can help you do avoid strange behaviors. Docker 1.12 supports healthcheck and we in this blog I share an example of implementation.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/docker.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Be smart like your healthcheck</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">25 Aug 2016 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Five minute read</span>
+ · docker, distributed_system, distributed system, automation, devops, health check</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>I am not a doctor, I am a Software Engineer and this is a tech post! You can
+continue to read!</p>
+
+<p>To monitor monolithic what we usually do is install a tool
+like <a href="https://www.nagios.org/">Nagios</a> to centralize all our metrics and to
+stay in touch with our infrastructure and our application.  In a distributed
+system with more that one services with own metrics the situation is totally
+different.  This about how it’s more dynamic respect a monolithic.  Containers
+or VM that scale up and down and that move around the network, Nagios is a good
+solution to check if our new service after a deploy is safe and ready to be
+attached into the production pool?  I love a talk made by <a href="https://github.com/kelseyhightower">Kelsey
+Hightower</a> during the Monitorama event, he
+speak about healthcheck watch him to follow a <a href="https://vimeo.com/173610242">great demo</a>!</p>
+
+<p>Healthcheck is an API that your service exposes to share it’s status, if you
+make it really start it’s a good tool to understand the situation of your
+service with just a call.  A service could be ready or not and it’s in the best
+situation to communicate its status.  It’s a like a patient, you need to ask
+him all what you need to make the best diagnosis and take a decision about it.</p>
+
+<p>We can stay focused on a REST service, it exposes an API under the route
+/health. The response could has two different Status Code:</p>
+
+<ul>
+  <li>200 if all it’s good and you service is ready</li>
+  <li>500 it there is something wrong and your service is not ready</li>
+</ul>
+
+<p>To make an smart HealthCheck what do we need to check?</p>
+
+<p>This is a real implementation:</p>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="k">echo</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>It’s better that nothing but we are looking for something smart!  We need to
+check all dependendencies that our service has and it’s for this reason that
+the service itself is the best actor because it knows what it need to be ready.
+I wrote a demo service, the name is <a href="https://github.com/gianarb/micro/blob/master/handle/health.go">micro</a>, it’s in go and
+the version 2 use
+mysql.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span><span class="x"> </span><span class="n">Health</span><span class="p">(</span><span class="n">username</span><span class="x"> </span><span class="kt">string</span><span class="p">,</span><span class="x"> </span><span class="n">password</span><span class="x"> </span><span class="kt">string</span><span class="p">,</span><span class="x"> </span><span class="n">addr</span><span class="x"> </span><span class="kt">string</span><span class="p">)</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">res</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">healtResponse</span><span class="p">{</span><span class="n">Status</span><span class="o">:</span><span class="x"> </span><span class="no">true</span><span class="p">}</span><span class="x">
+        </span><span class="n">httpStatus</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="m">200</span><span class="x">
+        </span><span class="n">dsn</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">fmt</span><span class="o">.</span><span class="n">Sprintf</span><span class="p">(</span><span class="s">"%s:%s@tcp(%s:3306)/micro"</span><span class="p">,</span><span class="x"> </span><span class="n">username</span><span class="p">,</span><span class="x"> </span><span class="n">password</span><span class="p">,</span><span class="x"> </span><span class="n">addr</span><span class="p">)</span><span class="x">
+        </span><span class="n">ddb</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sql</span><span class="o">.</span><span class="n">Open</span><span class="p">(</span><span class="s">"mysql"</span><span class="p">,</span><span class="x"> </span><span class="n">dsn</span><span class="p">)</span><span class="x">
+        </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+            </span><span class="n">log</span><span class="o">.</span><span class="n">Fatal</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+        </span><span class="p">}</span><span class="x">
+        </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">ddb</span><span class="o">.</span><span class="n">Ping</span><span class="p">();</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+            </span><span class="n">res</span><span class="o">.</span><span class="n">Status</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="no">false</span><span class="x">
+            </span><span class="n">res</span><span class="o">.</span><span class="n">Info</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="k">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="s">"database"</span><span class="o">:</span><span class="x"> </span><span class="n">err</span><span class="o">.</span><span class="n">Error</span><span class="p">()}</span><span class="x">
+        </span><span class="p">}</span><span class="x">
+        </span><span class="n">c</span><span class="p">,</span><span class="x"> </span><span class="n">_</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">json</span><span class="o">.</span><span class="n">Marshal</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="x">
+        </span><span class="k">if</span><span class="x"> </span><span class="n">res</span><span class="o">.</span><span class="n">Status</span><span class="x"> </span><span class="o">==</span><span class="x"> </span><span class="no">false</span><span class="x"> </span><span class="p">{</span><span class="x">
+            </span><span class="n">httpStatus</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="m">500</span><span class="x">
+        </span><span class="p">}</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"%s called /health"</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="o">.</span><span class="n">Host</span><span class="p">)</span><span class="x">
+        </span><span class="n">w</span><span class="o">.</span><span class="n">WriteHeader</span><span class="p">(</span><span class="n">httpStatus</span><span class="p">)</span><span class="x">
+        </span><span class="n">w</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="s">"Content-Type"</span><span class="p">,</span><span class="x"> </span><span class="s">"application/json"</span><span class="p">)</span><span class="x">
+        </span><span class="n">w</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+<p>Doesn’t matter how many dependencies you service has, you need to check all of
+them, databases, other services that it uses.  In my case I decided to add a
+key-value field, I called it <code class="highlighter-rouge">info</code>, it contains some information about whether
+mysql is or is not not working, in order to make the debug flow easy.  If the
+service that you are checking has an healthcheck you are lucky! You can use
+that entrypoint to know if your dependency is fine.  If you are not so lucky if
+you can create a wrapper or just check if you can reach the service, in my case
+I just tried to connect to mysql in order to know if my network supports me! I
+also using the correct database name in order to avoid edge case like “mysql is
+on but the database doesn’t exist”.</p>
+
+<p>The ecosystem supports healthchecks! Nginx looks it to know if a server is
+reachable, if the health check doesn’t work for a while it just make the server
+out for few times. Same for Kubernetes, Swarm and Docker.  Docker provides a
+library in go an <a href="https://github.com/docker/go-healthcheck">healthcheck
+framework</a> that you can use in your
+applications, it is also used in Docker 1.12.</p>
+
+<p>You can describe in your  Dockerfile an HealthCheck</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HEALTHCHECK CMD ./cli health
+</code></pre></div></div>
+
+<p>If the exit code is 0 Docker marks you container like healthy if it’s different like unhealthy.
+Very easy and flexible, you can check your REST healthcheck in this way</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HEALTHCHECK --interval=30s --timeout=30s --retries=3 \
+  CMD curl -si localhost:8000/health | grep 'HTTP/1.1 200 OK' &gt; /dev/null
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">--interval</code> is the timing between two healthcheck, <code class="highlighter-rouge">--timeout</code> is used to mark
+like unhealthy a service that doesn’t come back after 30s in this case,
+<code class="highlighter-rouge">--retries</code> is the attempts to do before make a container unhealthy.</p>
+
+<p>HealtCheck doesn’t replace traditional monitoring system but with a lot of
+instances and services has a single point to check and understand the situation
+after a deploy make your like easy and your products stable.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/be-start-like-your-healthcheck';
+    this.page.identifier = 'https://gianarb.it/blog/be-start-like-your-healthcheck';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Extend Kubernetes via a Shared Informer</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Kubernetes is designed to be extended. There a lot of way to do it via Custom Resource Definition for example. Kubernetes is an event-based architecture and you can use a primitive called Shared Informer to listen on the events triggered by k8s itself.">
+    <meta name="keywords" content="kubernetes, k8s, shared informer, golang, kubeassemble">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/kubernetes-shared-informer">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Extend Kubernetes via a Shared Informer">
+    <meta name='twitter:description' content="Kubernetes is designed to be extended. There a lot of way to do it via Custom Resource Definition for example. Kubernetes is an event-based architecture and you can use a primitive called Shared Informer to listen on the events triggered by k8s itself.">
+
+    <meta property="og:title" content="Extend Kubernetes via a Shared Informer" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/kubernetes-shared-informer" />
+    <meta property="og:description" content="Kubernetes is designed to be extended. There a lot of way to do it via Custom Resource Definition for example. Kubernetes is an event-based architecture and you can use a primitive called Shared Informer to listen on the events triggered by k8s itself." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/k8s.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/k8s.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Extend Kubernetes via a Shared Informer">
+    <meta name="twitter:description" content="Kubernetes is designed to be extended. There a lot of way to do it via Custom Resource Definition for example. Kubernetes is an event-based architecture and you can use a primitive called Shared Informer to listen on the events triggered by k8s itself.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/k8s.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Extend Kubernetes via a Shared Informer</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">07 Feb 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Seven minute read</span>
+ · kubernetes, k8s, shared informer, golang, kubeassemble</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Kubernetes runs a set of controllers to keep matching the current state of a
+resource with its desired state. It can be a Pod, Service or whatever is
+possible to control via Kubernetes.
+K8S has as core value <em>extendibility</em> to empower operators and applications to
+expand its set of capabilities. An event-based architecture where everything
+that matters get converted to an event that can be trigger custom code.</p>
+
+<p>When I think about a problem I have that requires to take action when Kubernetes
+does something my first target is one of the events that it triggers, example:</p>
+
+<ul>
+  <li>New Pod Created</li>
+  <li>New Node Joined</li>
+  <li>Service Removed
+and many, many more.</li>
+</ul>
+
+<p>To stay informed about when these events get triggered you can use a primitive
+exposed by Kubernetes and the
+<a href="https://github.com/kubernetes/client-go">client-go</a> called SharedInformer,
+inside the cache package. Let’s see how it works in practice.</p>
+
+<p>First of all as every application that interacts with Kubernetes you need to
+build a client:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// import "os"</span><span class="x">
+</span><span class="c">// import  corev1 "k8s.io/api/core/v1"</span><span class="x">
+</span><span class="c">// import  "k8s.io/client-go/kubernetes"</span><span class="x">
+</span><span class="c">// import  "k8s.io/client-go/tools/clientcmd"</span><span class="x">
+
+
+</span><span class="c">// Set the kubernetes config file path as environment variable</span><span class="x">
+</span><span class="n">kubeconfig</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">os</span><span class="o">.</span><span class="n">Getenv</span><span class="p">(</span><span class="s">"KUBECONFIG"</span><span class="p">)</span><span class="x">
+
+</span><span class="c">// Create the client configuration</span><span class="x">
+</span><span class="n">config</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">clientcmd</span><span class="o">.</span><span class="n">BuildConfigFromFlags</span><span class="p">(</span><span class="s">""</span><span class="p">,</span><span class="x"> </span><span class="n">kubeconfig</span><span class="p">)</span><span class="x">
+</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">logger</span><span class="o">.</span><span class="n">Panic</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">Error</span><span class="p">())</span><span class="x">
+    </span><span class="n">os</span><span class="o">.</span><span class="n">Exit</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="c">// Create the client</span><span class="x">
+</span><span class="n">clientset</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">kubernetes</span><span class="o">.</span><span class="n">NewForConfig</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="x">
+</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">logger</span><span class="o">.</span><span class="n">Panic</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">Error</span><span class="p">())</span><span class="x">
+    </span><span class="n">os</span><span class="o">.</span><span class="n">Exit</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>As you can see I am commenting the code almost line by line to give you a good
+understanding about what is going. Now that you have the client we can create
+the SharedInformerFactory. A shared informer listens to a specific resource; the
+factory helps you to create the one you need. For this example it lookup the Pod
+SharedInformer:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="x"> </span><span class="c">// import v1 "k8s.io/api/core/v1"</span><span class="x">
+ </span><span class="c">// import "k8s.io/client-go/informers"</span><span class="x">
+</span><span class="c">// import  "k8s.io/client-go/tools/cache"</span><span class="x">
+</span><span class="c">// import "k8s.io/apimachinery/pkg/util/runtime"</span><span class="x">
+
+</span><span class="c">// Create the shared informer factory and use the client to connect to</span><span class="x">
+</span><span class="c">// Kubernetes</span><span class="x">
+</span><span class="n">factory</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">informers</span><span class="o">.</span><span class="n">NewSharedInformerFactory</span><span class="p">(</span><span class="n">clientset</span><span class="p">,</span><span class="x"> </span><span class="m">0</span><span class="p">)</span><span class="x">
+
+</span><span class="c">// Get the informer for the right resource, in this case a Pod</span><span class="x">
+</span><span class="n">informer</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">factory</span><span class="o">.</span><span class="n">Core</span><span class="p">()</span><span class="o">.</span><span class="n">V1</span><span class="p">()</span><span class="o">.</span><span class="n">Pods</span><span class="p">()</span><span class="o">.</span><span class="n">Informer</span><span class="p">()</span><span class="x">
+
+</span><span class="c">// Create a channel to stops the shared informer gracefully</span><span class="x">
+</span><span class="n">stopper</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="nb">make</span><span class="p">(</span><span class="k">chan</span><span class="x"> </span><span class="k">struct</span><span class="p">{})</span><span class="x">
+</span><span class="k">defer</span><span class="x"> </span><span class="nb">close</span><span class="p">(</span><span class="n">stopper</span><span class="p">)</span><span class="x">
+
+</span><span class="c">// Kubernetes serves an utility to handle API crashes</span><span class="x">
+</span><span class="k">defer</span><span class="x"> </span><span class="n">runtime</span><span class="o">.</span><span class="n">HandleCrash</span><span class="p">()</span><span class="x">
+
+</span><span class="c">// This is the part where your custom code gets triggered based on the</span><span class="x">
+</span><span class="c">// event that the shared informer catches</span><span class="x">
+</span><span class="n">informer</span><span class="o">.</span><span class="n">AddEventHandler</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">ResourceEventHandlerFuncs</span><span class="p">{</span><span class="x">
+    </span><span class="c">// When a new pod gets created</span><span class="x">
+    </span><span class="n">AddFunc</span><span class="o">:</span><span class="x">    </span><span class="k">func</span><span class="p">(</span><span class="n">obj</span><span class="x"> </span><span class="k">interface</span><span class="p">{})</span><span class="x"> </span><span class="p">{</span><span class="x"> </span><span class="nb">panic</span><span class="p">(</span><span class="s">"not implemented"</span><span class="p">)</span><span class="x"> </span><span class="p">},</span><span class="x">
+    </span><span class="c">// When a pod gets updated</span><span class="x">
+    </span><span class="n">UpdateFunc</span><span class="o">:</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="k">interface</span><span class="p">{},</span><span class="x"> </span><span class="k">interface</span><span class="p">{})</span><span class="x"> </span><span class="p">{</span><span class="x"> </span><span class="nb">panic</span><span class="p">(</span><span class="s">"not implemented"</span><span class="p">)</span><span class="x"> </span><span class="p">},</span><span class="x">
+    </span><span class="c">// When a pod gets deleted</span><span class="x">
+    </span><span class="n">DeleteFunc</span><span class="o">:</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="k">interface</span><span class="p">{})</span><span class="x"> </span><span class="p">{</span><span class="x"> </span><span class="nb">panic</span><span class="p">(</span><span class="s">"not implemented"</span><span class="p">)</span><span class="x"> </span><span class="p">},</span><span class="x">
+</span><span class="p">})</span><span class="x">
+
+</span><span class="c">// You need to start the informer, in my case, it runs in the background</span><span class="x">
+</span><span class="k">go</span><span class="x"> </span><span class="n">informer</span><span class="o">.</span><span class="n">Run</span><span class="p">(</span><span class="n">stopper</span><span class="p">)</span><span class="x">
+</span></code></pre></div></div>
+
+<p>Knowing about Shared Informers gives you the ability to extend Kubernetes
+quickly. As you can see it is not a significant amount of code, the interfaces
+are pretty clear.</p>
+
+<h2 id="use-cases">Use cases</h2>
+
+<p>I used them a lot to write dirty hack but also to complete automation gab a system for example:</p>
+
+<ol>
+  <li>We used to have a very annoying error during the creation of a Pod with a
+persistent volume. It was not a high rate error a restart makes everything to
+work as expected. A dirty hack is pretty clear; I automated the manual
+process of restarting the pod with that error using a Shared Informer just
+like to one I showed you</li>
+  <li>I am using AWS, and I would like to push some EC2 tags down as kubelet
+labels. I use a shared informer but this time to watch when a new node joins
+the cluster. From the new node I can get its AWS instanceID (it is a label
+itself), and with the AWS API. I can retrieve its tags to identify how to
+edit the node itself via Kubernetes API. Everything is part of the <code class="highlighter-rouge">AddFunc</code>
+in the shared informer itself.</li>
+</ol>
+
+<h2 id="complete-example">Complete Example</h2>
+<p>This example is a function go program that logs when a new node that contains a
+particular tag joins the cluster:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span><span class="x"> </span><span class="n">main</span><span class="x">
+
+</span><span class="k">import</span><span class="x"> </span><span class="p">(</span><span class="x">
+    </span><span class="s">"fmt"</span><span class="x">
+    </span><span class="s">"log"</span><span class="x">
+    </span><span class="s">"os"</span><span class="x">
+
+    </span><span class="n">corev1</span><span class="x"> </span><span class="s">"k8s.io/api/core/v1"</span><span class="x">
+    </span><span class="s">"k8s.io/apimachinery/pkg/util/runtime"</span><span class="x">
+
+    </span><span class="s">"k8s.io/client-go/informers"</span><span class="x">
+    </span><span class="s">"k8s.io/client-go/kubernetes"</span><span class="x">
+    </span><span class="s">"k8s.io/client-go/tools/cache"</span><span class="x">
+    </span><span class="s">"k8s.io/client-go/tools/clientcmd"</span><span class="x">
+</span><span class="p">)</span><span class="x">
+
+</span><span class="k">const</span><span class="x"> </span><span class="p">(</span><span class="x">
+    </span><span class="c">// K8S_LABEL_AWS_REGION is the key name to retrieve the region from a</span><span class="x">
+    </span><span class="c">// Node that runs on AWS.</span><span class="x">
+    </span><span class="n">K8S_LABEL_AWS_REGION</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="s">"failure-domain.beta.kubernetes.io/region"</span><span class="x">
+</span><span class="p">)</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="n">main</span><span class="p">()</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">log</span><span class="o">.</span><span class="n">Print</span><span class="p">(</span><span class="s">"Shared Informer app started"</span><span class="p">)</span><span class="x">
+    </span><span class="n">kubeconfig</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">os</span><span class="o">.</span><span class="n">Getenv</span><span class="p">(</span><span class="s">"KUBECONFIG"</span><span class="p">)</span><span class="x">
+    </span><span class="n">config</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">clientcmd</span><span class="o">.</span><span class="n">BuildConfigFromFlags</span><span class="p">(</span><span class="s">""</span><span class="p">,</span><span class="x"> </span><span class="n">kubeconfig</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">Panic</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">Error</span><span class="p">())</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+    </span><span class="n">clientset</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">kubernetes</span><span class="o">.</span><span class="n">NewForConfig</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">Panic</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">Error</span><span class="p">())</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+
+    </span><span class="n">factory</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">informers</span><span class="o">.</span><span class="n">NewSharedInformerFactory</span><span class="p">(</span><span class="n">clientset</span><span class="p">,</span><span class="x"> </span><span class="m">0</span><span class="p">)</span><span class="x">
+    </span><span class="n">informer</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">factory</span><span class="o">.</span><span class="n">Core</span><span class="p">()</span><span class="o">.</span><span class="n">V1</span><span class="p">()</span><span class="o">.</span><span class="n">Nodes</span><span class="p">()</span><span class="o">.</span><span class="n">Informer</span><span class="p">()</span><span class="x">
+    </span><span class="n">stopper</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="nb">make</span><span class="p">(</span><span class="k">chan</span><span class="x"> </span><span class="k">struct</span><span class="p">{})</span><span class="x">
+    </span><span class="k">defer</span><span class="x"> </span><span class="nb">close</span><span class="p">(</span><span class="n">stopper</span><span class="p">)</span><span class="x">
+    </span><span class="k">defer</span><span class="x"> </span><span class="n">runtime</span><span class="o">.</span><span class="n">HandleCrash</span><span class="p">()</span><span class="x">
+    </span><span class="n">informer</span><span class="o">.</span><span class="n">AddEventHandler</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">ResourceEventHandlerFuncs</span><span class="p">{</span><span class="x">
+        </span><span class="n">AddFunc</span><span class="o">:</span><span class="x"> </span><span class="n">onAdd</span><span class="p">,</span><span class="x">
+    </span><span class="p">})</span><span class="x">
+    </span><span class="k">go</span><span class="x"> </span><span class="n">informer</span><span class="o">.</span><span class="n">Run</span><span class="p">(</span><span class="n">stopper</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="o">!</span><span class="n">cache</span><span class="o">.</span><span class="n">WaitForCacheSync</span><span class="p">(</span><span class="n">stopper</span><span class="p">,</span><span class="x"> </span><span class="n">informer</span><span class="o">.</span><span class="n">HasSynced</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">runtime</span><span class="o">.</span><span class="n">HandleError</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">Errorf</span><span class="p">(</span><span class="s">"Timed out waiting for caches to sync"</span><span class="p">))</span><span class="x">
+        </span><span class="k">return</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+    </span><span class="o">&lt;-</span><span class="n">stopper</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="c">// onAdd is the function executed when the kubernetes informer notified the</span><span class="x">
+</span><span class="c">// presence of a new kubernetes node in the cluster</span><span class="x">
+</span><span class="k">func</span><span class="x"> </span><span class="n">onAdd</span><span class="p">(</span><span class="n">obj</span><span class="x"> </span><span class="k">interface</span><span class="p">{})</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="c">// Cast the obj as node</span><span class="x">
+    </span><span class="n">node</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">obj</span><span class="o">.</span><span class="p">(</span><span class="o">*</span><span class="n">corev1</span><span class="o">.</span><span class="n">Node</span><span class="p">)</span><span class="x">
+    </span><span class="n">_</span><span class="p">,</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">node</span><span class="o">.</span><span class="n">GetLabels</span><span class="p">()[</span><span class="n">K8S_LABEL_AWS_REGION</span><span class="p">]</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">fmt</span><span class="o">.</span><span class="n">Printf</span><span class="p">(</span><span class="s">"It has the label!"</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/kubernetes-shared-informer';
+    this.page.identifier = 'https://gianarb.it/blog/kubernetes-shared-informer';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

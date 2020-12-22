@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Server time vs Response time</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="How do you dimension an infrastructure? How can you calculate container limits or how many nodes your application requires to support a specific load? Response time and server time are two key measurements to monitor saturation.">
+    <meta name="keywords" content="monitoring, devops, observability, san francisco, metrics, capacity, cloud">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/server-time-vs-response-time">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Server time vs Response time">
+    <meta name='twitter:description' content="How do you dimension an infrastructure? How can you calculate container limits or how many nodes your application requires to support a specific load? Response time and server time are two key measurements to monitor saturation.">
+
+    <meta property="og:title" content="Server time vs Response time" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/server-time-vs-response-time" />
+    <meta property="og:description" content="How do you dimension an infrastructure? How can you calculate container limits or how many nodes your application requires to support a specific load? Response time and server time are two key measurements to monitor saturation." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/pastrami-sf.jpg" />
+    <meta name='twitter:image' content="https://gianarb.it/img/pastrami-sf.jpg">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Server time vs Response time">
+    <meta name="twitter:description" content="How do you dimension an infrastructure? How can you calculate container limits or how many nodes your application requires to support a specific load? Response time and server time are two key measurements to monitor saturation.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/pastrami-sf.jpg">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Server time vs Response time</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">18 May 2018 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Three minute read</span>
+ · monitoring, devops, observability, san francisco, metrics, capacity, cloud</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>If you find yourself in San Francisco walking nearby Market Street, you should
+consider stopping at the Jewish Museum. There is a charming Pastrami place just
+next to it. It is a sandwich place with good lemonade. It only takes 3-4 minutes
+to get your meal, and from there it takes no more than 15 minutes walking to be
+in front of the Ocean. Very nice!
+Now, let’s consider this other scenario.
+It is lunchtime, and you are starving. You rush outside your office, and you run
+to the Pastrami place close to the Jewish Museum. After 35 minutes of wait, you
+get your sandwich and start eating it asking yourself: why it took so long this
+time? Shall I probably have walked to the next place to get a faster meal?</p>
+
+<p>Something similar can happen to your Services as well! And that’s precisely the
+phenomena in computer science we try to capture using the concepts of server
+time and response time.
+Server time aims to measures how much a server takes to run a specific action.
+Let’s say consider an example operation the generation of a monthly report: it
+usually takes 2ms, but if a lot of customers require the same kind of report at
+the same time and your system saturates? This situation might very quickly end
+up in having a subset of them getting the report in more than 1 minute or
+actually in the timeout of the operation. The time it takes for a customer to
+get his report is what is typically called response time.</p>
+
+<h2 id="how-can-we-measure-these-metrics">How can we measure these metrics?</h2>
+<p>The answer to this question is not easy: it depends on your architecture and
+system. The starting point is instrumenting your application to determine how
+much time it gets to produce the report. Stress testing is the other important
+aspect: generating some load on your application and sampling the average
+response time will let you estimate the application’s service time. Notice that
+to make this measurement the app should NOT soak during this test!</p>
+
+<p>If you control all the chain (from the HTTP app that sends the request to the
+server), you can trace the request and simulate the same behavior of your
+customers. If you can’t do this, you can consider using the frontend edge,
+probably a load balancer.</p>
+
+<blockquote>
+  <p>I would rather have questions that can’t be answered than answers that can’t
+be questioned. Richard Feynman</p>
+</blockquote>
+
+<h2 id="why-does-it-matter">Why does it matter</h2>
+<p>How many nodes do I need to deploy to accommodate x number of requests per
+second? When should I consider scaling out my application? How does scale-out
+affect the customer experience?
+This is precisely why server time and response time matters! Having an average
+response time close to the defined service time is a signal of proper
+utilization and health of an application because it indicates that the response
+latency is under control and it is far from saturation. Bringing to the limit
+these two signals, in addition, is a key metric to estimate the correct sizing
+of the applications instances and infrastructure.</p>
+
+<p><img alt="Market Street San Francisco, Pastrami Resturant Jewish Meseum" src="/img/pastrami-sf.jpg" class="img-fluid" /></p>
+
+<p>Btw the Pastrami place exists! You should try it! I will be in SF in 2 weeks. So
+let me know about other places <a href="https://twitter.com/gianarb">@gianarb</a>.
+Picture from GMaps. I will take a better one!</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/server-time-vs-response-time';
+    this.page.identifier = 'https://gianarb.it/blog/server-time-vs-response-time';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

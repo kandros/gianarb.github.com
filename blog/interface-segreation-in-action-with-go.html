@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Interface segregation in action with Go</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="It takes a couple of hours to get an hello world up and running in a new language but it takes ages to learn it deeply. Even if Go has a learning curve that is affordable some concepts take time to stick in mind. Interface are everywhere and this flexibility makes them crucial to write maintainable Go code.">
+    <meta name="keywords" content="golang">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/interface-segreation-in-action-with-go">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Interface segregation in action with Go">
+    <meta name='twitter:description' content="It takes a couple of hours to get an hello world up and running in a new language but it takes ages to learn it deeply. Even if Go has a learning curve that is affordable some concepts take time to stick in mind. Interface are everywhere and this flexibility makes them crucial to write maintainable Go code.">
+
+    <meta property="og:title" content="Interface segregation in action with Go" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/interface-segreation-in-action-with-go" />
+    <meta property="og:description" content="It takes a couple of hours to get an hello world up and running in a new language but it takes ages to learn it deeply. Even if Go has a learning curve that is affordable some concepts take time to stick in mind. Interface are everywhere and this flexibility makes them crucial to write maintainable Go code." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/me.jpg" />
+    <meta name='twitter:image' content="https://gianarb.it/img/me.jpg">
+
+
+    <meta property="og:image" content="" />
+    <meta name='twitter:image' content="https://gianarb.it/img/wood_growth.jpg">
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Interface segregation in action with Go">
+    <meta name="twitter:description" content="It takes a couple of hours to get an hello world up and running in a new language but it takes ages to learn it deeply. Even if Go has a learning curve that is affordable some concepts take time to stick in mind. Interface are everywhere and this flexibility makes them crucial to write maintainable Go code.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/me.jpg">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+<style>
+.bgimage {
+  background-image: url('/img/wood_growth.jpg');
+}
+</style>
+<section class="bgimage">
+</section>
+
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Interface segregation in action with Go</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">20 Aug 2020 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Five minute read</span>
+ · golang</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Everybody should write an article about Golang interface! I don’t know why I
+waited so long for mine!</p>
+
+<p>Golang interfaces are your best friends when it comes to mocking an object or to
+specify a well scoped set of functionalities required by a function to interact
+with an object.</p>
+
+<p>Yep! That’s how they work, you have an entire object that does a lot of cool
+things, but when you pass it to a function only a subset of it get used, that’s
+when you can replace the structure itself with an interface that only requires
+what it is needed by the structure.</p>
+
+<p>In this way you will have a smaller piece of code to mock in your test and to
+deal with (this is a good way to hide functions you don’t want other people or
+yourself in a rush to use).</p>
+
+<p>Even more when you remember to keep the interface small via composition.</p>
+
+<p>For example let’s suppose you have to build an interface that describes a generic
+resource that you can Create, Update and Delete. This is useful to standardize
+something that can be persisted in a database. I am setting this up
+so.</p>
+
+<p>You should not use <code class="highlighter-rouge">interface{}</code> because it is too generic. I used it for
+simplicity but Kubernetes for examples uses an object called
+<a href="https://godoc.org/k8s.io/apimachinery/pkg/runtime"><code class="highlighter-rouge">runtime.Object</code></a> and it way
+better. Go 2 will have generics that will make this situation even easier. Or
+you can use code generation as well. But the idea to use a serializable object
+like Kubernetes is good.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span><span class="x"> </span><span class="n">Resource</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Create</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x">
+    </span><span class="n">Update</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span><span class="x"> </span><span class="n">updated</span><span class="x"> </span><span class="k">interface</span><span class="p">{})</span><span class="x"> </span><span class="kt">error</span><span class="x">
+    </span><span class="n">Delete</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>This is a reasonably small interface, it is easy to satisfy but I do not like
+the name. I think it does not give me the ability to figure out what’s its
+purpose. It represents, a resource but I prefer to call interface as actions or
+a adjective. In this case the structure who implements this interface can be
+stored in a database. I think a better name for it is:
+<a href="https://en.wiktionary.org/wiki/persistable">“Persistable”</a> because it makes
+clear its purpose.</p>
+
+<p>A strategy to make an interface smaller in this case is to break it in actions:</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span><span class="x"> </span><span class="n">Creatable</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Create</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">Updatable</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Update</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span><span class="x"> </span><span class="n">updated</span><span class="x"> </span><span class="k">interface</span><span class="p">{})</span><span class="x"> </span><span class="kt">error</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">Deletable</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Delete</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>And you can use composition to create an interface that requires all the three
+actions to work if you need it:</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span><span class="x"> </span><span class="n">Persistable</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Deletable</span><span class="x">
+    </span><span class="n">Updatable</span><span class="x">
+    </span><span class="n">Creatable</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>This is useful when a function uses more than one of those actions, if you have
+an interface that contains also <code class="highlighter-rouge">Get</code> or <code class="highlighter-rouge">View</code> you can think about a different
+split <code class="highlighter-rouge">ReadOnly</code> contains <code class="highlighter-rouge">Get</code>, <code class="highlighter-rouge">View</code> and <code class="highlighter-rouge">Modifiable</code> that will require only
+the functions <code class="highlighter-rouge">Update</code>, <code class="highlighter-rouge">Create</code>, <code class="highlighter-rouge">Delete</code>.</p>
+
+<p>Imagine you are writing a set of http handlers to expose a CRUD API around your
+resources:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Create
+Update
+Delete
+List
+GetByID
+</code></pre></div></div>
+
+<p>Usually it looks like this, you can create an interface for every function, all
+your resources will implement the functions and you will be able to write a
+single “Create” handle for all the resources:</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span><span class="x"> </span><span class="n">CreateHandle</span><span class="p">(</span><span class="n">c</span><span class="x"> </span><span class="n">Creatable</span><span class="p">)</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">HandleFunc</span><span class="p">(</span><span class="s">"/resource"</span><span class="p">,</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">c</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">Context</span><span class="p">);</span><span class="x"> </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+            </span><span class="n">w</span><span class="o">.</span><span class="n">WriteHeader</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">StatusInternalServerError</span><span class="p">)</span><span class="x">
+            </span><span class="k">return</span><span class="x">
+        </span><span class="p">}</span><span class="x">
+        </span><span class="n">w</span><span class="o">.</span><span class="n">WriteHeader</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">StatusCreated</span><span class="p">)</span><span class="x">
+    </span><span class="p">})</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>If you have to write a test for the handler it does not matter how complicated
+the resource is, you just have to mock the <code class="highlighter-rouge">Creatable</code> interface, one single
+function. This is a very basic example, if you need to add validation the
+<code class="highlighter-rouge">Creatable</code> function can require a <code class="highlighter-rouge">func Valid() error</code> that you can
+add incrementally in all your resources.</p>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span><span class="x"> </span><span class="n">CreateHandle</span><span class="p">(</span><span class="n">c</span><span class="x"> </span><span class="n">Creatable</span><span class="p">)</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">HandleFunc</span><span class="p">(</span><span class="s">"/resource"</span><span class="p">,</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">c</span><span class="o">.</span><span class="n">Valid</span><span class="p">();</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+            </span><span class="n">w</span><span class="o">.</span><span class="n">WriteHeader</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">StatusBadRequest</span><span class="p">)</span><span class="x">
+            </span><span class="k">return</span><span class="x">
+        </span><span class="p">}</span><span class="x">
+        </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">c</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">Context</span><span class="p">);</span><span class="x"> </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+            </span><span class="n">w</span><span class="o">.</span><span class="n">WriteHeader</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">StatusInternalServerError</span><span class="p">)</span><span class="x">
+            </span><span class="k">return</span><span class="x">
+        </span><span class="p">}</span><span class="x">
+        </span><span class="n">w</span><span class="o">.</span><span class="n">WriteHeader</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">StatusCreated</span><span class="p">)</span><span class="x">
+    </span><span class="p">})</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/interface-segreation-in-action-with-go';
+    this.page.identifier = 'https://gianarb.it/blog/interface-segreation-in-action-with-go';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

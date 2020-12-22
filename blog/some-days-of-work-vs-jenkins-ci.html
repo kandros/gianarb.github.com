@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Some days of work vs Jenkins CI</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="I love Jenkins CI is a beautiful and stable project to run job and manage continuous integration and deploy pipeline, few days ago I worked to improve the delivery pipeline in CurrencyFair and I started to do some thought about this topic, here my internal battle vs Jenkins CI">
+    <meta name="keywords" content="ci, devops, automation, jenkins, craft, go, opensource">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/some-days-of-work-vs-jenkins-ci">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Some days of work vs Jenkins CI">
+    <meta name='twitter:description' content="I love Jenkins CI is a beautiful and stable project to run job and manage continuous integration and deploy pipeline, few days ago I worked to improve the delivery pipeline in CurrencyFair and I started to do some thought about this topic, here my internal battle vs Jenkins CI">
+
+    <meta property="og:title" content="Some days of work vs Jenkins CI" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/some-days-of-work-vs-jenkins-ci" />
+    <meta property="og:description" content="I love Jenkins CI is a beautiful and stable project to run job and manage continuous integration and deploy pipeline, few days ago I worked to improve the delivery pipeline in CurrencyFair and I started to do some thought about this topic, here my internal battle vs Jenkins CI" />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/jenkins.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/jenkins.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Some days of work vs Jenkins CI">
+    <meta name="twitter:description" content="I love Jenkins CI is a beautiful and stable project to run job and manage continuous integration and deploy pipeline, few days ago I worked to improve the delivery pipeline in CurrencyFair and I started to do some thought about this topic, here my internal battle vs Jenkins CI">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/jenkins.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Some days of work vs Jenkins CI</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">21 Feb 2016 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Five minute read</span>
+ · ci, devops, automation, jenkins, craft, go, opensource</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <blockquote class="twitter-tweet tw-align-center" data-lang="en"><p lang="en" dir="ltr"><a href="https://t.co/02HbnkzRsS">https://t.co/02HbnkzRsS</a> &quot;Some Days of work vs <a href="https://twitter.com/hashtag/JenkinsCI?src=hash">#JenkinsCI</a>&quot; Little things about continuous integration <a href="https://twitter.com/hashtag/ci?src=hash">#ci</a> <a href="https://twitter.com/hashtag/dev?src=hash">#dev</a></p>&mdash; Gianluca Arbezzano (@GianArb) <a href="https://twitter.com/GianArb/status/709466156453732352">March 14, 2016</a></blockquote>
+<script async="" src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<p>Guys please move down your hands, I love JenkinsCI! I am not here to write a
+bad post about it!
+I am here to share few days of reasonings about continuous
+inteagrations, Jenkins CI and all this strong topic.</p>
+
+<h2 id="reproducible">Reproducible</h2>
+<p>There are a lot of tools that you can use to run tasks,
+ant, make, grunt. Use it to run section or all your build on your local
+environment, this appraoch increase the value your tasks becuase you use and
+test them more times.
+To have a reproducible build help you to maintain splitted your flow by your
+runner maybe Jenkins is perfect but the are other tools and services:
+Travis-CI, CircleCI, Drone, don’t create a big dependency with your environment.</p>
+
+<h2 id="speedy">Speedy</h2>
+<p>A slow test suite is a bad idea, in 1 minutes I can maintain the
+focus on the execution but 5 minutes are a lot, you can take a coffé or
+start to think about another task and return on your old task require an
+effort. This several focus switch it’s not good, and at the same time you
+lost 5 minutes for each build and for every engineer after 1 week are a lot
+of money.</p>
+
+<h2 id="versionable">Versionable</h2>
+<p>I lost more time about this point and I am not sure if it is a required point
+or not but TravisCI for example use a yml specification file, this file doesn’t
+describe only your build but it part of the story of your application, if you
+include it into the VCS. Could be it a value for your pipeline?</p>
+
+<h2 id="maintainable">Maintainable</h2>
+<p>There are a lot of tools that you can choice to create the perfect pipeline ant
+it’s very easy lost your focus and start to use too much tools, you must try
+all but it’s your task to create the perfect sub-set of tools the point 1
+(Reusability) increase the value, use tools that you can reuse during the daily
+work of your team to increase the develop and go the flow better.
+Each tools that you add seems perfect until they don’t becase a problem.</p>
+
+<h2 id="scalable">Scalable</h2>
+<p>An easy way to decrease the time for your job is split it in different little
+jobs and run them in parallel, you can check the codestyle and run your test
+suite in the same time for example.
+Another good reason to create a scalable environment for your jobs is because
+your company would grow and the continuous integration system burns to helps it
+to grow and not to stop it.</p>
+
+<h2 id="unique">Unique</h2>
+<p>Jenkins, vagrant, ant, make, drone, docker are only a list of amazing tools to
+create the perfect pipeline to deploy and test your code but they are only a
+means the goal is indeed the best pipeline for your code and for your team.
+Observe how your team works, which the requirments and criticalities and design
+the best pipeline for your use case.</p>
+
+<h2 id="communication-layer">Communication layer</h2>
+<p>One goal for your team is understand the status of the build without logged in
+any application, because enter into the Jenkins site (at first because it is
+not beautiful :P ) and it is another step to do other: create feature branch,
+submit pull request, write code lalala..
+Use directly the pull request to create a connection with your job, you
+continuous integration system can submit a new comment or if you are working
+with GitHub you can use the status check, in this way you can help your
+colleagues during them work and remove a jump.</p>
+
+<p>With JenkinsCi you can do all but if you lost more time to create your best
+pipeline? Maybe you don’t know it or maybe it is not the best tool for your use
+case. Jenkins is flexible, but the flexibility is only the number of plugins
+that you can install?</p>
+
+<p>I don’t know I use it but I am happy to experiment and there are a lot of new
+technologies and tools that maybe can help us to do a good work, with or
+without JenkinsCI.</p>
+
+<h2 id="as-a-microservices">As a microservices</h2>
+
+<p><img src="/img/pipeline.svg" alt="Continuous Integration and Deploy pipeline" /></p>
+
+<p>This is a summary of a pipeline, each pipeline follows this steps and from this
+point of view seems very easy!
+Jenkins, drone as very stong solution but they are all in one, if you follow
+this image it’s clear that maybe to create the own pipeline for your projects
+play with the LEGO to mount the best steps for your team and for your project
+it’s possible.</p>
+
+<p>I am happy to share some projects to implement this approach.</p>
+
+<h2 id="slimmer-proof-of-concept">Slimmer, proof of concept</h2>
+<p>I tried to create a runner for my test suite, <a href="https://github.com/gianarb/slimmer">slimmer</a>,
+to implement this thought with docker and go.
+Go offers a lot of libraries and tools to create something in a bit of time and
+docker it’s perfect because it creates isolated environment and it’s very easy
+to scale with Swarm.
+In practice at the moment this console app exec a <code class="highlighter-rouge">build.slimmer</code> a bash script
+executable flexible and versionable.
+<a href="https://travis-ci.org">TravisCI</a> is powerful but the YML file is it a good way
+to describe a build? It’s flexible? Maybe yes but I am curious to try a “low
+level” approach, because finally all becames a series of commands.
+I created also a series of agent to trigger notification quicly:
+<a href="https://github.com/gianarb/ircer">ircer</a>,
+<a href="https://github.com/gianarb/slacker">slacker</a>.  You can use them to notify the
+result of your build.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">composer install
+vendor/bin/phpunit
+<span class="nv">RESULT</span><span class="o">=</span><span class="nv">$?</span>
+curl <span class="nt">-LSs</span> https://github.com/gianarb/ircer/releases/download/0.1.0/ircer_0.1.0_linux_386 <span class="o">&gt;</span> ircer
+chmod 755 ircer
+<span class="k">if</span> <span class="o">[</span> <span class="nv">$RESULT</span> <span class="o">=</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    ./ircer <span class="nt">-j</span> tech-team <span class="nt">-m</span> <span class="s2">"You are a great develop. Your build works"</span>
+<span class="k">else</span>
+    ./ircer <span class="nt">-j</span> tech-team <span class="nt">-m</span> <span class="s2">"No bad but your build doesn't work"</span>
+<span class="k">fi</span></code></pre></figure>
+
+<p>This is an example of <code class="highlighter-rouge">build.slimmer</code> with an IRC notification, it is a PoC and
+I prepared a little <a href="/slimmer-poc-slide/#/">presentation</a> to
+receive some feedback and I presented it during a Dublin Go Meetup</p>
+
+<div class="row">
+    <div class="col-md-12 text-center">
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/CWCHT3GClMM" frameborder="0" allowfullscreen=""></iframe>
+    </div>
+</div>
+
+<p>I wait some feedback if you are interested about continuous integration and
+continuous delivery.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/some-days-of-work-vs-jenkins-ci';
+    this.page.identifier = 'https://gianarb.it/blog/some-days-of-work-vs-jenkins-ci';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

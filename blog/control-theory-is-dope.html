@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Control Theory is dope</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="This is an introductive article about control theory applied to microservices and cloud computing. It is a very high level overview about control theory driven by what I loved most about it.">
+    <meta name="keywords" content="software design, design pattern">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/control-theory-is-dope">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Control Theory is dope">
+    <meta name='twitter:description' content="This is an introductive article about control theory applied to microservices and cloud computing. It is a very high level overview about control theory driven by what I loved most about it.">
+
+    <meta property="og:title" content="Control Theory is dope" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/control-theory-is-dope" />
+    <meta property="og:description" content="This is an introductive article about control theory applied to microservices and cloud computing. It is a very high level overview about control theory driven by what I loved most about it." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/gianarb.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/gianarb.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Control Theory is dope">
+    <meta name="twitter:description" content="This is an introductive article about control theory applied to microservices and cloud computing. It is a very high level overview about control theory driven by what I loved most about it.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/gianarb.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Control Theory is dope</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">04 Sep 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">Six minute read</span>
+ · software design, design pattern</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>For the last two years at InfluxData I worked on our custom orchestrator that
+empower InfluxCloud v1 to run. I have some talk about it at InfluxDays, but they
+are not recorded so, I can’t really post them here, sadly.</p>
+
+<p>If you are thinking: “Why you should write your own orchestrator?”, I have few
+answers for you.</p>
+
+<ol>
+  <li>Back in the day Kubernetes was not so popular, 4 years ago when InfluxCloud
+started it was not at least.</li>
+  <li>We had since the beginning to manage data and state, people still says that
+Kubernetes is not for them today, image how it was 4 years ago.</li>
+</ol>
+
+<p>Btw now InfluxCloud v2 leverages Kubernetes.</p>
+
+<p>Writing a good orchestrator is super fun! When I started but still today a big
+part of it are frustrating and not so good but the one we wrote following
+reactive planning and control theory are lovely! This article is an introduction
+about Control Theory. <a href="https://twitter.com/goller">Chris Goller</a> Solution
+Architect at InfluxData was the first person that told me about how Control
+Theory works in theory, and he pushed me to try reactive planning for our
+orchestrator.</p>
+
+<p>As Kubernetes contributor I recognized some of those patterns as looking at
+shared informers, controller and so on. So I understood since the beginning that
+those patterns was everywhere around me!</p>
+
+<p><a href="https://twitter.com/colmmacc">Colm MacCárthaigh</a> from Amazon Web Service with
+his  talks (like the one posted here) helped me to find resources to read, more
+patterns and use cases for it.</p>
+
+<div class="embed-responsive embed-responsive-16by9 col-xs-12 text-center">
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/O8xLxNje30M" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
+    picture-in-picture" allowfullscreen=""></iframe>
+</div>
+
+<h2 id="why-it-works">Why it works</h2>
+
+<p>When I started to work as a Web Developer, designing APIs or websites I had
+different challenges to face. To write a solid CRUD you put all your effort
+when a request comes to your API, you validate it, apply transformation to
+sanitize the input and if it is valid you save it
+in your database. You need to build good UX, complex validations systems and so
+on. But what lands in the database is right and rock solid.</p>
+
+<p>There are other systems where you do not have a database that tells you what is
+right or not. You need to <strong>measure</strong> the current state, <strong>calculate</strong> what
+needs to get back to your desired state and you need to <strong>apply</strong> what you
+calculated.</p>
+
+<p>Those systems are everywhere:</p>
+
+<ul>
+  <li>The boiler you have at home to keep the water warm needs to constantly check if the
+desired temperature you set is the current one. What it is stored in its
+memory is what you desire, not the truth.</li>
+  <li>The example Colm MacCárthaigh used is the Autoscaler. It keeps checking the
+state of your system based on the scalability rules you set. For example if
+CPU is over 70% spin up 3 nodes. The autoscaler measures the current state of
+your CPUs and when it is over it calculates what needs to be done and it
+executes the scale up or down.</li>
+  <li>When you read Kubernetes documentation is will see reference to Controller,
+reconciliation loop, desired state and so on. All of those concepts come from
+Control Theory.</li>
+</ul>
+
+<p>Orchestrator but more in general big microservices environment do not have the
+concept of data locality as we used to have in the past. The data you need can
+change continously, and they need to collected from different sources and
+combined in order to calculate what needs to be done.</p>
+
+<p>I think this is the main reason about why patterns coming from Control Theory
+works well.</p>
+
+<p>If you need to write a program that provisions 3 virtual machines and attach them
+to a random DNS record you can approach this problems in 2 ways. You can write a
+procedure that:</p>
+
+<ol>
+  <li>Creates 3 instances.</li>
+  <li>Takes the public IPs.</li>
+  <li>Creates the DNS record with the IPs as A record.</li>
+</ol>
+
+<p>Another way you have to fix this issue is to start from checking what you have,
+making a plan to matches what it is not as you desire. So it will look like
+this:</p>
+
+<ol>
+  <li>Check how many instances there are and mark what you need to do, if there are
+2 of them you need one, if there are 5 you need to delete 2, you there are 0
+of them you need to create all of them.</li>
+  <li>Check if the DNS record is already there and how many IPs are assigned to it.</li>
+  <li>If it does exist you do not need to create it but you need to check if the
+IPs assigned to it are the same of the instances, If they are not you need to
+reconcile the DNS record fixing the IPs.</li>
+  <li>The record does not exist? You can create it.</li>
+</ol>
+
+<p>If you are wondering how all those checks makes the system more reliable is because
+you never know what you already created or what it is already where. Let’s
+assume you are on AWS. API requests can fails at the middle of your process and
+you need to know where you are. AWS itself can stop or terminate instances, or
+some other procedures can do it or for manual mistake.</p>
+
+<p>Approaching the problem in this way allows you to repeat the flow over and over
+because it idempotent and at every retry the process will be able to reconcile
+any divergence between what you asked for (3 VMs and one DNS record) and what it
+is actually running. This process is called reconciliation loop.</p>
+
+<h2 id="101-architecture">101 architecture</h2>
+
+<p>Colm MacCárthaigh highlights three major areas around how a successful Control
+Theory implementation looks like:</p>
+
+<ol>
+  <li>Measurement process</li>
+  <li>Controller</li>
+  <li>Actuator</li>
+</ol>
+
+<h2 id="measurement-process">Measurement process</h2>
+
+<p>The way you retrieve the current state of the system is crucial in order to have
+a low latency. They are crucial in order to calculate what needs to be done
+because from the current state your program get different decisions.</p>
+
+<h2 id="controller">Controller</h2>
+
+<p>This section is where I have more experience with. The desired state is stored
+and clear usually. You know here to go. You get the measurements and with this
+information you need to write a procedure capable of making a plan stating from
+your current state to get to the desired one.</p>
+
+<p>I wrote a few weeks ago an introduction about <a href="https://gianarb.it/blog/reactive-planning-is-a-cloud-native-pattern">reactive
+planning</a>
+it is the way I used to calculate a plan.</p>
+
+<p>I am also preparing a PoC in Golang with actual code you can run and test to
+share in practice what means reactive planning.</p>
+
+<h2 id="actuator">Actuator</h2>
+
+<p>It is the part that take a calculated plan, and it executes it. I worked a lot
+with schedulers that are able to take a set of steps and execute them one by one
+or in parallel based on needs.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Think about one of them problem you have a try to think in a more reactive way,
+starting from checking where you are and not from doing things. Reliability and
+stability for your code will improve drastically.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/control-theory-is-dope';
+    this.page.identifier = 'https://gianarb.it/blog/control-theory-is-dope';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

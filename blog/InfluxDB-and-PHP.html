@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Influx DB and PHP implementation</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="InfluxDB is a popular and open source time series database capable to store millions of points keeping a fast lookup. It supports SQL as query language and it exposes an HTTP API to interact with it. In Corley we wrote a PHP SDK and we released it open source to integrate InfluxDB in your PHP application.">
+    <meta name="keywords" content="php, influxdb, monitoring, corley, monitoring, open source">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/InfluxDB-and-PHP">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Influx DB and PHP implementation">
+    <meta name='twitter:description' content="InfluxDB is a popular and open source time series database capable to store millions of points keeping a fast lookup. It supports SQL as query language and it exposes an HTTP API to interact with it. In Corley we wrote a PHP SDK and we released it open source to integrate InfluxDB in your PHP application.">
+
+    <meta property="og:title" content="Influx DB and PHP implementation" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/InfluxDB-and-PHP" />
+    <meta property="og:description" content="InfluxDB is a popular and open source time series database capable to store millions of points keeping a fast lookup. It supports SQL as query language and it exposes an HTTP API to interact with it. In Corley we wrote a PHP SDK and we released it open source to integrate InfluxDB in your PHP application." />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/influxdb.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/influxdb.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Influx DB and PHP implementation">
+    <meta name="twitter:description" content="InfluxDB is a popular and open source time series database capable to store millions of points keeping a fast lookup. It supports SQL as query language and it exposes an HTTP API to interact with it. In Corley we wrote a PHP SDK and we released it open source to integrate InfluxDB in your PHP application.">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/influxdb.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Influx DB and PHP implementation</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">06 Jan 2015 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">One minute read</span>
+ · php, influxdb, monitoring, corley, monitoring, open source</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Influx DB is <a href="http://en.wikipedia.org/wiki/Time_series_database">time series
+database</a> written in Go.</p>
+
+<p>It supports SQL like queries and it has different entry points, REST API (tcp
+protocol) and UDP.</p>
+
+<div class="row">
+<div class="col-md-4 col-md-offset-3"><img class="img-fluid" src="/img/influxdb.png" /></div>
+</div>
+
+<p>We wrote a <a href="https://github.com/corley/influxdb-php-sdk">sdk</a> to manage
+integration between Influx and PHP.</p>
+
+<p>It supports Guzzle Adapter but if you use Zend\Client you can write your
+implementation.</p>
+
+<figure class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="nv">$guzzle</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\GuzzleHttp\Client</span><span class="p">();</span>
+
+<span class="nv">$options</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Options</span><span class="p">();</span>
+<span class="nv">$adapter</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">GuzzleAdapter</span><span class="p">(</span><span class="nv">$guzzle</span><span class="p">,</span> <span class="nv">$options</span><span class="p">);</span>
+
+<span class="nv">$client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Client</span><span class="p">();</span>
+<span class="nv">$client</span><span class="o">-&gt;</span><span class="na">setAdapter</span><span class="p">(</span><span class="nv">$adapter</span><span class="p">);</span></code></pre></figure>
+
+<p>In this case we are using a Guzzle Client, we communicate with Influx in TPC, but we can speak with it in UDP</p>
+
+<figure class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="nv">$options</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Options</span><span class="p">();</span>
+<span class="nv">$adapter</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">UdpAdapter</span><span class="p">(</span><span class="nv">$options</span><span class="p">);</span>
+
+<span class="nv">$client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Client</span><span class="p">();</span>
+<span class="nv">$client</span><span class="o">-&gt;</span><span class="na">setAdapter</span><span class="p">(</span><span class="nv">$adapter</span><span class="p">);</span></code></pre></figure>
+
+<p>Both of them have the same usage</p>
+
+<figure class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="nv">$client</span><span class="o">-&gt;</span><span class="na">mark</span><span class="p">(</span><span class="s2">"app.search"</span><span class="p">,</span> <span class="nv">$points</span><span class="p">,</span> <span class="s2">"s"</span><span class="p">);</span></code></pre></figure>
+
+<p>The first different between udp and tcp is known, TPC after request expects a
+response, UDP does not expect anything and in this case does not exist any
+delivery guarantee.  If you can accept this stuff this is the benchmark:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">Corley<span class="se">\B</span>enchmarks<span class="se">\I</span>nflux DB<span class="se">\A</span>dapterEvent
+    Method Name                Iterations    Average Time      Ops/second
+    <span class="nt">------------------------</span>  <span class="nt">------------</span>  <span class="nt">--------------</span>    <span class="nt">-------------</span>
+    sendDataUsingHttpAdapter: <span class="o">[</span>1,000     <span class="o">]</span> <span class="o">[</span>0.0026700308323] <span class="o">[</span>374.52751]
+    sendDataUsingUdpAdapter : <span class="o">[</span>1,000     <span class="o">]</span> <span class="o">[</span>0.0000436344147] <span class="o">[</span>22,917.69026]</code></pre></figure>
+
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/InfluxDB-and-PHP';
+    this.page.identifier = 'https://gianarb.it/blog/InfluxDB-and-PHP';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="content-language" content="en">
+    <meta charset="utf-8"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Reactive planning and reconciliation in Go</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+    <meta name="keywords" content="software design, golang, go, reconciliation loop, reactive planning">
+    <meta name="google-site-verification" content="FoOIQ005srOjHlH19pNWapHvlOOVgCqHsz47IfQ6QNo" />
+    <link rel="canonical" href="https://gianarb.it/blog/reactive-planning-and-reconciliation-in-go">
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content="Reactive planning and reconciliation in Go">
+    <meta name='twitter:description' content="">
+
+    <meta property="og:title" content="Reactive planning and reconciliation in Go" />
+    <meta property="og:site_name" content="gianarb blog"/>
+    <meta property="og:url" content="https://gianarb.it/blog/reactive-planning-and-reconciliation-in-go" />
+    <meta property="og:description" content="" />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:image" content="https://gianarb.it/img/gianarb.png" />
+    <meta name='twitter:image' content="https://gianarb.it/img/gianarb.png">
+
+
+
+    <meta property="twitter:account_id" content="129952408" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@gianarb">
+    <meta name="twitter:creator" content="@gianarb">
+    <meta name="twitter:title" content="Reactive planning and reconciliation in Go">
+    <meta name="twitter:description" content="">
+    <meta name="twitter:image:src" content="https://gianarb.it/img/gianarb.png">
+    <meta name="twitter:image:width" content="500">
+    <meta name="twitter:image:height" content="500">
+    <meta name="twitter:domain" content="gianarb.it">
+
+    <link rel='alternate' type='application/atom+xml' title='Atom 0.3' href='/atom.xml'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" rel="stylesheet">
+
+    <!-- source https://github.com/rsms/inter/ -->
+    <link href="/fonts/inter/inter-ui.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/main.css">
+
+</head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" role="navigation">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="navbar-brand" href="#">
+        <a href="/" class="nav-link">
+          <img src="/img/favicon.png" class="img-fluid d-inline-block align-top" alt="">
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+          <li><a class="nav-link" href="/">Home</a></li>
+          <li><a class="nav-link" href="/blog.html">Blog</a></li>
+          <li class="nav-item"><a href="/conferences.html" class="nav-link">Conferences</a></li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CE7DLK7L&placement=gianarbit" id="_carbonads_js"></script>
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+</nav>
+
+        
+
+<div class="container">
+
+    <div class="content">
+
+        <div class="row">
+            <div id="post-title" class="mt-5 col-md-12">
+                <h1>Reactive planning and reconciliation in Go</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p class="meta">13 Sep 2019 · <!-- thanks to https://www.davidputney.com/2016/07/how-medium-style-read-time-estimate.html -->
+
+
+<span class="blog-read-time">24 minute read</span>
+ · software design, golang, go, reconciliation loop, reactive planning</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="addthis_sharing_toolbox"></div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+            <p>Reading my recent posts you can spot my attempt to share what I learned, and
+I am still studying around distributed system, control theory and provisioning.</p>
+
+<p>I wrote a quick introduction about why I think <a href="/blog/reactive-planning-is-a-cloud-native-pattern">reactive planning is a cloud
+native pattern</a> and I
+published an article about <a href="/blog/control-theory-is-dope">control theory</a>, but I
+have just scratched the surface of this topic obviously. I have a 470 pages to
+read from the book <a href="https://www.amazon.it/Designing-Distributed-Control-Systems-Veli-Pekka/dp/B01FIX9LMG">Designing Distributed Control Systems: A Pattern Language
+Approach</a>.
+It will take me forever.</p>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>It is easier to explain how much powerful reactive planning is looking at one
+example, I wrote it in go, and in this article I am explaining the most
+important parts.</p>
+
+<p>Just to summarize, I think resiliency in modern application is crucial and very
+hard to achieve in practice, mainly because we need to implement and learn a set
+of patterns and rules. When I think about a solid application inside a
+microservices environment, or in a high distributed ecosystem my mind drives me
+into a different industry. I think about tractors, boilers, and what ever
+does not depend on a static state stored inside a database but on a dynamic
+source of truth.</p>
+
+<p>When I think about an orchestrator it is clear to me that there is no way to
+trust a cache layer in order to understand how many resources (VMs, containers,
+pods) are running. We need to check them live because you never know what is
+happening to your workload. Those kinds of applications are sensible to latency,
+and they require a fast feedback loop.</p>
+
+<p>That’s one of the reason about why when you read about Kubernetes internals you
+read about reconciliation loops and informers.</p>
+
+<h2 id="our-use-case">Our use case</h2>
+
+<p>I wrote a small PoC, it is an application that I called
+<a href="https://github.com/gianarb/cucumber">cucumber</a>, it is available on GitHub and
+you can run it if you like.</p>
+
+<p>It is a CLI tools that provisions a set of resources on AWS. The provisioned
+architecture is very simple. You can define a number of EC2 and, they will be
+created and assigned to a Route53 record, when the record does not exist the
+application will create it.</p>
+
+<p>I learned about how to think about problems like that. At the beginning of my
+career the approach was simple, “I know what to do, I need to write a program
+that reads the request and does what need to be done”. So you start configuring
+the AWS client, parsing the request and making a few API requests.</p>
+
+<p>Everything runs perfectly and you succeed at creating 100 clusters.
+Thing starts to be more complicated, you have more resources to provisioning
+like load balancers, subnets, security groups and more business logic related to
+who can do what. Requests start to be more than 5 at execution and the logic
+somethings does not work as linear as it was doing before. At this point you
+have a lot of conditions and figuring out where the procedure failed and how to
+fix the issue becomes very hard.</p>
+
+<p>This is why my current approach is different when I recognize this kind of
+pattern I always start from the current state of the system.</p>
+
+<p>You can question the fact that at the first execution it is obvious that nothing
+is there, you can just create what ever needs to be created. And I agree on
+that, but assuming that you do not know your starting points drives you to implement
+the workflow in a way that is idempotent. When you achieve this goal you can
+re-run the same workflow over and over again, if there is nothing to do the
+program won’t do anything otherwise it is smart enough to realize what needs to
+be done. In this way you can create something called <strong>reconciliation loop</strong>.</p>
+
+<h2 id="reconciliation-loop">Reconciliation loop</h2>
+
+<p>The idea to re-run the procedures over and over assuming you do not know where
+you left it is very powerful. Following our example, if the creation flow does
+not end because AWS returned a 500 you won’t be stuck in a situation where you
+do not know how to end the procedure, you will just wait for the next
+re-execution of the flow and it will be able to figure what is already created.
+In my example this patterns works great when provisioning the route53 DNS record
+because the DNS propagation can take a lot of time and in order to realize if
+the DNS record already exists or if there are the right amounts of IPs attached
+to it I use the
+<a href="https://jameshfisher.com/2017/08/03/golang-dns-lookup/"><code class="highlighter-rouge">net.LookupIP</code></a>, it
+is the perfect procedure that can take an unknown amount of time to be
+addressed.</p>
+
+<h2 id="reactive-planning">Reactive planning</h2>
+
+<p>At the very least reconciliation loop can be explained as a simple <code class="highlighter-rouge">loop</code> that
+will execute a procedure forever but how do you write a workflow that is able to
+understand the state of the system and autonomously make a plan to fix the gap
+between current and desired state? This is what reactive planning does and
+that’s why control theory is done!</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// Procedure describe every single step to be executed. It is the smallest unit</span><span class="x">
+</span><span class="c">// of work in a plan.</span><span class="x">
+</span><span class="k">type</span><span class="x"> </span><span class="n">Procedure</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="c">// Name identifies a specific procedure.</span><span class="x">
+	</span><span class="n">Name</span><span class="p">()</span><span class="x"> </span><span class="kt">string</span><span class="x">
+	</span><span class="c">// Do execute the business logic for a specific procedure.</span><span class="x">
+	</span><span class="n">Do</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="p">([]</span><span class="n">Procedure</span><span class="p">,</span><span class="x"> </span><span class="kt">error</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="c">// Plan describe a set of procedures and the way to calculate them</span><span class="x">
+</span><span class="k">type</span><span class="x"> </span><span class="n">Plan</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="c">// Create returns the list of procedures that needs to be executed.</span><span class="x">
+	</span><span class="n">Create</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="p">([]</span><span class="n">Procedure</span><span class="p">,</span><span class="x"> </span><span class="kt">error</span><span class="p">)</span><span class="x">
+	</span><span class="c">// Name identifies a specific plan</span><span class="x">
+	</span><span class="n">Name</span><span class="p">()</span><span class="x"> </span><span class="kt">string</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>Let’s start with a bit of Go. <code class="highlighter-rouge">Procedure</code> and <code class="highlighter-rouge">Plan</code> are the fundamental
+interfaces to get familiar with:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">Plan</code> are a collection of <code class="highlighter-rouge">Procedures</code>. The <code class="highlighter-rouge">Create</code> function is able to
+figure out the state of system adding procedures dynamically</li>
+  <li><code class="highlighter-rouge">Procedure</code> are the unit of work, they need to be as small as possible. The
+cool part about them is that they can return other procedures (and they can
+return other procedures as well) in this way build resilience. If a procedure
+returns an error the <code class="highlighter-rouge">Plan</code> is marked as failed.</li>
+</ul>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// Scheduler takes a plan and it executes it.</span><span class="x">
+</span><span class="k">type</span><span class="x"> </span><span class="n">Scheduler</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="c">// stepCounter keep track of the number of steps exectued by the scheduler.</span><span class="x">
+	</span><span class="c">// It is used for debug and logged out at the end of every execution.</span><span class="x">
+	</span><span class="n">stepCounter</span><span class="x"> </span><span class="kt">int</span><span class="x">
+	</span><span class="c">// logger is an instance of the zap.Logger</span><span class="x">
+	</span><span class="n">logger</span><span class="x"> </span><span class="o">*</span><span class="n">zap</span><span class="o">.</span><span class="n">Logger</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span></code></pre></div></div>
+
+<p><code class="highlighter-rouge">Plan</code> and <code class="highlighter-rouge">Procedure</code> are crucial, but we need a way to execute a plan, it is
+called scheduler. The <code class="highlighter-rouge">Scheduler</code> has an <code class="highlighter-rouge">Execture</code> function that accept a
+<code class="highlighter-rouge">Plan</code> and it executes it <strong>until there is nothing left to do</strong>. Procedures can
+returns other procedures it means that the scheduler needs to recursively
+execute all the procedures.</p>
+
+<p>The way the scheduler has to understand where the plan is done if via the number
+of steps returned by the <code class="highlighter-rouge">Plan.Create</code> function. The scheduler executes every
+plan at last twice, if the second time there are not steps left it means that
+the first execution succeeded.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// Execute accept an plan as input and it execute it until there are not anymore</span><span class="x">
+</span><span class="c">// procedures to do</span><span class="x">
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="o">*</span><span class="n">Scheduler</span><span class="p">)</span><span class="x"> </span><span class="n">Execute</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span><span class="x"> </span><span class="n">p</span><span class="x"> </span><span class="n">Plan</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="n">uuidGenerator</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">uuid</span><span class="o">.</span><span class="n">New</span><span class="p">()</span><span class="x">
+	</span><span class="n">logger</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">With</span><span class="p">(</span><span class="n">zap</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"execution_id"</span><span class="p">,</span><span class="x"> </span><span class="n">uuidGenerator</span><span class="o">.</span><span class="n">String</span><span class="p">()))</span><span class="x">
+	</span><span class="n">start</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">time</span><span class="o">.</span><span class="n">Now</span><span class="p">()</span><span class="x">
+	</span><span class="k">if</span><span class="x"> </span><span class="n">loggableP</span><span class="p">,</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">p</span><span class="o">.</span><span class="p">(</span><span class="n">Loggable</span><span class="p">);</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="n">loggableP</span><span class="o">.</span><span class="n">WithLogger</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="n">logger</span><span class="o">.</span><span class="n">Info</span><span class="p">(</span><span class="s">"Started execution plan "</span><span class="x"> </span><span class="o">+</span><span class="x"> </span><span class="n">p</span><span class="o">.</span><span class="n">Name</span><span class="p">())</span><span class="x">
+	</span><span class="n">s</span><span class="o">.</span><span class="n">stepCounter</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="m">0</span><span class="x">
+	</span><span class="k">for</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="n">steps</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">p</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="n">logger</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">Error</span><span class="p">())</span><span class="x">
+			</span><span class="k">return</span><span class="x"> </span><span class="n">err</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span><span class="x"> </span><span class="o">==</span><span class="x"> </span><span class="m">0</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="k">break</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="n">err</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="x"> </span><span class="n">steps</span><span class="p">,</span><span class="x"> </span><span class="n">logger</span><span class="p">)</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="n">logger</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">Error</span><span class="p">(),</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"execution_time"</span><span class="p">,</span><span class="x"> </span><span class="n">time</span><span class="o">.</span><span class="n">Since</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="o">.</span><span class="n">String</span><span class="p">()),</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="s">"step_executed"</span><span class="p">,</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">stepCounter</span><span class="p">))</span><span class="x">
+			</span><span class="k">return</span><span class="x"> </span><span class="n">err</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="n">logger</span><span class="o">.</span><span class="n">Info</span><span class="p">(</span><span class="s">"Plan executed without errors."</span><span class="p">,</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"execution_time"</span><span class="p">,</span><span class="x"> </span><span class="n">time</span><span class="o">.</span><span class="n">Since</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="o">.</span><span class="n">String</span><span class="p">()),</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="s">"step_executed"</span><span class="p">,</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">stepCounter</span><span class="p">))</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="no">nil</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>The <code class="highlighter-rouge">react</code> function implements the recursion and as you can see is the place
+where the procedures get executed <code class="highlighter-rouge">step.Do</code>.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// react is a recursive function that goes over all the steps and the one</span><span class="x">
+</span><span class="c">// returned by previous steps until the plan does not return anymore steps</span><span class="x">
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="o">*</span><span class="n">Scheduler</span><span class="p">)</span><span class="x"> </span><span class="n">react</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span><span class="x"> </span><span class="n">steps</span><span class="x"> </span><span class="p">[]</span><span class="n">Procedure</span><span class="p">,</span><span class="x"> </span><span class="n">logger</span><span class="x"> </span><span class="o">*</span><span class="n">zap</span><span class="o">.</span><span class="n">Logger</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="k">for</span><span class="x"> </span><span class="n">_</span><span class="p">,</span><span class="x"> </span><span class="n">step</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="k">range</span><span class="x"> </span><span class="n">steps</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="n">s</span><span class="o">.</span><span class="n">stepCounter</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">stepCounter</span><span class="x"> </span><span class="o">+</span><span class="x"> </span><span class="m">1</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="n">loggableS</span><span class="p">,</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">step</span><span class="o">.</span><span class="p">(</span><span class="n">Loggable</span><span class="p">);</span><span class="x"> </span><span class="n">ok</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="n">loggableS</span><span class="o">.</span><span class="n">WithLogger</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="n">innerSteps</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">step</span><span class="o">.</span><span class="n">Do</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="n">logger</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="s">"Step failed."</span><span class="p">,</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"step"</span><span class="p">,</span><span class="x"> </span><span class="n">step</span><span class="o">.</span><span class="n">Name</span><span class="p">()),</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">err</span><span class="p">))</span><span class="x">
+			</span><span class="k">return</span><span class="x"> </span><span class="n">err</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="nb">len</span><span class="p">(</span><span class="n">innerSteps</span><span class="p">)</span><span class="x"> </span><span class="o">&gt;</span><span class="x"> </span><span class="m">0</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="x"> </span><span class="n">innerSteps</span><span class="p">,</span><span class="x"> </span><span class="n">logger</span><span class="p">);</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+				</span><span class="k">return</span><span class="x"> </span><span class="n">err</span><span class="x">
+			</span><span class="p">}</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="no">nil</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>All the primitives described in this section are in their go module called
+<a href="https://github.com/gianarb/planner">github.com/gianarb/planner</a> that you can
+use. Other than what showed here the scheduler supports context cancellation and
+deadline. In this way you can set a timeout for every execution.</p>
+
+<p>One of the next big feature I will develop is a reusable reconciliation loop for
+plans. In cucumber, it is very raw. Just a goroutine and a WaitGroup to keep the main
+process up:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>go func() {
+    logger := logger.With(zap.String("from", "reconciliation"))
+    scheduler.WithLogger(logger)
+    for {
+        logger.Info("reconciliation loop started")
+        if err := scheduler.Execute(ctx, &amp;p); err != nil {
+            logger.With(zap.Error(err)).Warn("cucumber reconciliation failed.")
+        }
+        time.Sleep(10 * time.Second)
+        logger.Info("reconciliation loop ended")
+    }
+}()
+</code></pre></div></div>
+<p>But this is too simple and it does not work in a distributed environment where
+only one process should run the reconciliation and not all the replicas.</p>
+
+<p>I wrote this code to help myself to internalize and explain what reactive
+plans means. And also because I think the go community has a lot of great tools
+that make uses of this concept like Terraform, Kubernetes but there are not low
+level or simple to understand pieces of code. The next chapter describes how to
+write your own control plan using reactive planning.</p>
+
+<h2 id="theory-applied-to-cucumber">Theory applied to cucumber…</h2>
+
+<p>Let’s start looking at the <code class="highlighter-rouge">main</code> function:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">p</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">plan</span><span class="o">.</span><span class="n">CreatePlan</span><span class="p">{</span><span class="x">
+    </span><span class="n">ClusterName</span><span class="o">:</span><span class="x">  </span><span class="n">req</span><span class="o">.</span><span class="n">Name</span><span class="p">,</span><span class="x">
+    </span><span class="n">NodesNumber</span><span class="o">:</span><span class="x">  </span><span class="n">req</span><span class="o">.</span><span class="n">NodesNumber</span><span class="p">,</span><span class="x">
+    </span><span class="n">DNSRecord</span><span class="o">:</span><span class="x">    </span><span class="n">req</span><span class="o">.</span><span class="n">DNSName</span><span class="p">,</span><span class="x">
+    </span><span class="n">HostedZoneID</span><span class="o">:</span><span class="x"> </span><span class="n">hostedZoneID</span><span class="p">,</span><span class="x">
+    </span><span class="n">Tags</span><span class="o">:</span><span class="x"> </span><span class="k">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="x">
+        </span><span class="s">"app"</span><span class="o">:</span><span class="x">          </span><span class="s">"cucumber"</span><span class="p">,</span><span class="x">
+        </span><span class="s">"cluster-name"</span><span class="o">:</span><span class="x"> </span><span class="n">req</span><span class="o">.</span><span class="n">Name</span><span class="p">,</span><span class="x">
+    </span><span class="p">},</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="n">scheduler</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">planner</span><span class="o">.</span><span class="n">NewScheduler</span><span class="p">()</span><span class="x">
+</span><span class="n">scheduler</span><span class="o">.</span><span class="n">WithLogger</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span><span class="x">
+
+</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">scheduler</span><span class="o">.</span><span class="n">Execute</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">p</span><span class="p">);</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">logger</span><span class="o">.</span><span class="n">With</span><span class="p">(</span><span class="n">zap</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">err</span><span class="p">))</span><span class="o">.</span><span class="n">Fatal</span><span class="p">(</span><span class="s">"cucumber ended with an error"</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>In cucumber there is only one Plan the <code class="highlighter-rouge">CreationPlan</code>. We create it based on the
+YAML file that contains the requested cluster. For example:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">name</span><span class="pi">:</span> <span class="s">yuppie</span>
+<span class="na">nodes_num</span><span class="pi">:</span> <span class="s">3</span>
+<span class="na">dns_name</span><span class="pi">:</span> <span class="s">yeppie.pluto.net</span>
+</code></pre></div></div>
+
+<p>And it gets executed by the scheduler. As you can see if the schedule returns an
+error we do not exit, we do not kill the process. We do not panic! Because we
+know that things can break and our code is designed to break just a little
+and in way it can be recovered.</p>
+
+<p>After the first execution the process spins up a goroutine that is the one I
+copied above to explain a raw and simple control loop.</p>
+
+<p>The process stays in the loop until we kill the process.</p>
+
+<p>In order to test the reconciliation you can try to remove one or more EC2 or the
+DNS record, watching the logs you will see how inside the loop the scheduler
+executes the plan and reconcile the state of the system in AWS with the one you
+described in the YAML.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">CUCUMBER_MODE</span><span class="o">=</span>reconcile <span class="nv">AWS_HOSTED_ZONE</span><span class="o">=</span>&lt;hosted-zone-id&gt; <span class="nv">AWS_PROFILE</span><span class="o">=</span>credentials <span class="nv">CUCUMBER_REQUEST</span><span class="o">=</span>./test.yaml go run cmd/main.go 
+</code></pre></div></div>
+
+<p>This is the command I uses to start the process.</p>
+
+<p>The steps I wrote in cucumber are not many and you can find them inside
+<code class="highlighter-rouge">./cucumber/step</code>:</p>
+
+<ol>
+  <li>create_dns_record</li>
+  <li>reconcile_nodes</li>
+  <li>run_instance</li>
+  <li>update_dns_record</li>
+</ol>
+
+<p><code class="highlighter-rouge">run_instance</code> for example is very small, it interacts with AWS via the go-sdk
+and it creates an EC2:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span><span class="x"> </span><span class="n">step</span><span class="x">
+
+</span><span class="k">import</span><span class="x"> </span><span class="p">(</span><span class="x">
+	</span><span class="s">"context"</span><span class="x">
+
+	</span><span class="s">"github.com/aws/aws-sdk-go/aws"</span><span class="x">
+	</span><span class="s">"github.com/aws/aws-sdk-go/service/ec2"</span><span class="x">
+	</span><span class="s">"github.com/gianarb/planner"</span><span class="x">
+	</span><span class="s">"go.uber.org/zap"</span><span class="x">
+</span><span class="p">)</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">RunInstance</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="n">EC2svc</span><span class="x">   </span><span class="o">*</span><span class="n">ec2</span><span class="o">.</span><span class="n">EC2</span><span class="x">
+	</span><span class="n">Tags</span><span class="x">     </span><span class="k">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="x">
+	</span><span class="n">VpcID</span><span class="x">    </span><span class="o">*</span><span class="kt">string</span><span class="x">
+	</span><span class="n">SubnetID</span><span class="x"> </span><span class="o">*</span><span class="kt">string</span><span class="x">
+	</span><span class="n">logger</span><span class="x">   </span><span class="o">*</span><span class="n">zap</span><span class="o">.</span><span class="n">Logger</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="o">*</span><span class="n">RunInstance</span><span class="p">)</span><span class="x"> </span><span class="n">Name</span><span class="p">()</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="s">"run-instance"</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="o">*</span><span class="n">RunInstance</span><span class="p">)</span><span class="x"> </span><span class="n">Do</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="p">([]</span><span class="n">planner</span><span class="o">.</span><span class="n">Procedure</span><span class="p">,</span><span class="x"> </span><span class="kt">error</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="n">tags</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="n">ec2</span><span class="o">.</span><span class="n">Tag</span><span class="p">{}</span><span class="x">
+	</span><span class="k">for</span><span class="x"> </span><span class="n">k</span><span class="p">,</span><span class="x"> </span><span class="n">v</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="k">range</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">Tags</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="n">k</span><span class="x"> </span><span class="o">==</span><span class="x"> </span><span class="s">"cluster-name"</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="n">tags</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="nb">append</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">ec2</span><span class="o">.</span><span class="n">Tag</span><span class="p">{</span><span class="x">
+				</span><span class="n">Key</span><span class="o">:</span><span class="x">   </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"Name"</span><span class="p">),</span><span class="x">
+				</span><span class="n">Value</span><span class="o">:</span><span class="x"> </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">v</span><span class="p">),</span><span class="x">
+			</span><span class="p">})</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="n">tags</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="nb">append</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">ec2</span><span class="o">.</span><span class="n">Tag</span><span class="p">{</span><span class="x">
+			</span><span class="n">Key</span><span class="o">:</span><span class="x">   </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">k</span><span class="p">),</span><span class="x">
+			</span><span class="n">Value</span><span class="o">:</span><span class="x"> </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">v</span><span class="p">),</span><span class="x">
+		</span><span class="p">})</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="n">steps</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="p">[]</span><span class="n">planner</span><span class="o">.</span><span class="n">Procedure</span><span class="p">{}</span><span class="x">
+	</span><span class="n">instanceInput</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">ec2</span><span class="o">.</span><span class="n">RunInstancesInput</span><span class="p">{</span><span class="x">
+		</span><span class="n">ImageId</span><span class="o">:</span><span class="x">      </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"ami-0378588b4ae11ec24"</span><span class="p">),</span><span class="x">
+		</span><span class="n">InstanceType</span><span class="o">:</span><span class="x"> </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"t2.micro"</span><span class="p">),</span><span class="x">
+		</span><span class="c">//UserData:              &amp;userData,</span><span class="x">
+		</span><span class="n">MinCount</span><span class="o">:</span><span class="x"> </span><span class="n">aws</span><span class="o">.</span><span class="n">Int64</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="x">
+		</span><span class="n">MaxCount</span><span class="o">:</span><span class="x"> </span><span class="n">aws</span><span class="o">.</span><span class="n">Int64</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="x">
+		</span><span class="n">SubnetId</span><span class="o">:</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">SubnetID</span><span class="p">,</span><span class="x">
+		</span><span class="n">TagSpecifications</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="n">ec2</span><span class="o">.</span><span class="n">TagSpecification</span><span class="p">{</span><span class="x">
+			</span><span class="p">{</span><span class="x">
+				</span><span class="n">ResourceType</span><span class="o">:</span><span class="x"> </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"instance"</span><span class="p">),</span><span class="x">
+				</span><span class="n">Tags</span><span class="o">:</span><span class="x">         </span><span class="n">tags</span><span class="p">,</span><span class="x">
+			</span><span class="p">},</span><span class="x">
+		</span><span class="p">},</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="n">_</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">EC2svc</span><span class="o">.</span><span class="n">RunInstances</span><span class="p">(</span><span class="n">instanceInput</span><span class="p">)</span><span class="x">
+	</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="k">return</span><span class="x"> </span><span class="n">steps</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="n">steps</span><span class="p">,</span><span class="x"> </span><span class="no">nil</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>As you can see the unique situation where I return an error is if the
+<code class="highlighter-rouge">ec2.RunInstance</code> fails, but only because this is a simple implementation.
+Moving forward you can replace the return of that error with other steps, for
+example you can terminate the cluster and cleanup, in this way you won’t left
+broken cluster around, or if you try other steps to recover from that error
+leaving at the next executions (from the reconciliation loop) to end the
+workflow.</p>
+
+<p>From my experience reactive planning makes refactoring or development very
+modular, as you can see you do not need to make all the flow rock solid since
+day one, because it is very time-consuming, but you always have a clear
+entrypoint for future work. Everywhere you return or log an error can be
+replaced at some point with steps, making your flow rock solid from the
+observation you do from previous run.</p>
+
+<p>The <code class="highlighter-rouge">reconcile_nodes</code> is another interesting steps. Because <code class="highlighter-rouge">run_insance</code> only
+calls AWS and it creates one node, but as you can image we need to create or
+terminate a random amount of them depending on the current state of the system.</p>
+
+<ol>
+  <li>if you required 3 EC2 but there are zero of them you need to run 3 new nodes</li>
+  <li>if there are 2 nodes but your required 3 we need 1 more</li>
+  <li>if there are 56 nodes but you required 3 of them we need to terminate 63 EC2s</li>
+</ol>
+
+<p>The <code class="highlighter-rouge">reconcile_nodes</code> procedures makes that calculation and returns the right
+steps:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span><span class="x"> </span><span class="n">step</span><span class="x">
+
+</span><span class="k">import</span><span class="x"> </span><span class="p">(</span><span class="x">
+	</span><span class="s">"context"</span><span class="x">
+
+	</span><span class="s">"github.com/aws/aws-sdk-go/service/ec2"</span><span class="x">
+	</span><span class="s">"go.uber.org/zap"</span><span class="x">
+
+	</span><span class="s">"github.com/gianarb/planner"</span><span class="x">
+</span><span class="p">)</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">ReconcileNodes</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="n">EC2svc</span><span class="x">        </span><span class="o">*</span><span class="n">ec2</span><span class="o">.</span><span class="n">EC2</span><span class="x">
+	</span><span class="n">Tags</span><span class="x">          </span><span class="k">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="x">
+	</span><span class="n">VpcID</span><span class="x">         </span><span class="o">*</span><span class="kt">string</span><span class="x">
+	</span><span class="n">SubnetID</span><span class="x">      </span><span class="o">*</span><span class="kt">string</span><span class="x">
+	</span><span class="n">CurrentNumber</span><span class="x"> </span><span class="kt">int</span><span class="x">
+	</span><span class="n">DesiredNumber</span><span class="x"> </span><span class="kt">int</span><span class="x">
+	</span><span class="n">logger</span><span class="x">        </span><span class="o">*</span><span class="n">zap</span><span class="o">.</span><span class="n">Logger</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="o">*</span><span class="n">ReconcileNodes</span><span class="p">)</span><span class="x"> </span><span class="n">Name</span><span class="p">()</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="s">"reconcile-node"</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="o">*</span><span class="n">ReconcileNodes</span><span class="p">)</span><span class="x"> </span><span class="n">Do</span><span class="p">(</span><span class="n">ctx</span><span class="x"> </span><span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">)</span><span class="x"> </span><span class="p">([]</span><span class="n">planner</span><span class="o">.</span><span class="n">Procedure</span><span class="p">,</span><span class="x"> </span><span class="kt">error</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+	</span><span class="n">s</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">Info</span><span class="p">(</span><span class="s">"need to reconcile number of running nodes"</span><span class="p">,</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="s">"current"</span><span class="p">,</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">CurrentNumber</span><span class="p">),</span><span class="x"> </span><span class="n">zap</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="s">"desired"</span><span class="p">,</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">DesiredNumber</span><span class="p">))</span><span class="x">
+	</span><span class="n">steps</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="p">[]</span><span class="n">planner</span><span class="o">.</span><span class="n">Procedure</span><span class="p">{}</span><span class="x">
+	</span><span class="k">if</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">CurrentNumber</span><span class="x"> </span><span class="o">&gt;</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">DesiredNumber</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="k">for</span><span class="x"> </span><span class="n">ii</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">DesiredNumber</span><span class="p">;</span><span class="x"> </span><span class="n">ii</span><span class="x"> </span><span class="o">&lt;</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">CurrentNumber</span><span class="p">;</span><span class="x"> </span><span class="n">ii</span><span class="o">++</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="c">// TODO: remove instances if they are too many</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+	</span><span class="p">}</span><span class="x"> </span><span class="k">else</span><span class="x"> </span><span class="p">{</span><span class="x">
+		</span><span class="n">ii</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">CurrentNumber</span><span class="x">
+		</span><span class="k">if</span><span class="x"> </span><span class="n">ii</span><span class="x"> </span><span class="o">==</span><span class="x"> </span><span class="m">0</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="n">ii</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">ii</span><span class="x"> </span><span class="o">+</span><span class="x"> </span><span class="m">1</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+		</span><span class="k">for</span><span class="x"> </span><span class="n">i</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">ii</span><span class="p">;</span><span class="x"> </span><span class="n">i</span><span class="x"> </span><span class="o">&lt;</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">DesiredNumber</span><span class="p">;</span><span class="x"> </span><span class="n">i</span><span class="o">++</span><span class="x"> </span><span class="p">{</span><span class="x">
+			</span><span class="n">steps</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="nb">append</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">RunInstance</span><span class="p">{</span><span class="x">
+				</span><span class="n">EC2svc</span><span class="o">:</span><span class="x">   </span><span class="n">s</span><span class="o">.</span><span class="n">EC2svc</span><span class="p">,</span><span class="x">
+				</span><span class="n">Tags</span><span class="o">:</span><span class="x">     </span><span class="n">s</span><span class="o">.</span><span class="n">Tags</span><span class="p">,</span><span class="x">
+				</span><span class="n">VpcID</span><span class="o">:</span><span class="x">    </span><span class="n">s</span><span class="o">.</span><span class="n">VpcID</span><span class="p">,</span><span class="x">
+				</span><span class="n">SubnetID</span><span class="o">:</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">SubnetID</span><span class="p">,</span><span class="x">
+			</span><span class="p">})</span><span class="x">
+		</span><span class="p">}</span><span class="x">
+	</span><span class="p">}</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="n">steps</span><span class="p">,</span><span class="x"> </span><span class="no">nil</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+
+<p>As you can see I have only implemented the <code class="highlighter-rouge">RunInstnace</code> step, and there is a
+<code class="highlighter-rouge">TODO</code> left in the code, it means that scale down does not work for now.
+It returns the right steps required to matches the desired state, if there are 2
+nodes, but we required 3 of them this steps will return only one <code class="highlighter-rouge">RunInstance</code>
+that will be executed by the scheduler.</p>
+
+<p>Last interesting part of the code is the <code class="highlighter-rouge">CreatePlan.Create</code> function. This is
+where the magic happens. As we saw the schedulers calls the <code class="highlighter-rouge">Create</code> functions
+at least twice for every execution and its responsability is to measure the
+current state and according to it calculate the required steps to achieve that
+we desire. It is a long function that you have in the repo, but this is an idea:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">resp</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">ec2Svc</span><span class="o">.</span><span class="n">DescribeInstances</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ec2</span><span class="o">.</span><span class="n">DescribeInstancesInput</span><span class="p">{</span><span class="x">
+    </span><span class="n">Filters</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="n">ec2</span><span class="o">.</span><span class="n">Filter</span><span class="p">{</span><span class="x">
+        </span><span class="p">{</span><span class="x">
+            </span><span class="n">Name</span><span class="o">:</span><span class="x">   </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"instance-state-name"</span><span class="p">),</span><span class="x">
+            </span><span class="n">Values</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="kt">string</span><span class="p">{</span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"pending"</span><span class="p">),</span><span class="x"> </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"running"</span><span class="p">)},</span><span class="x">
+        </span><span class="p">},</span><span class="x">
+        </span><span class="p">{</span><span class="x">
+            </span><span class="n">Name</span><span class="o">:</span><span class="x">   </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"tag:cluster-name"</span><span class="p">),</span><span class="x">
+            </span><span class="n">Values</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="kt">string</span><span class="p">{</span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">ClusterName</span><span class="p">)},</span><span class="x">
+        </span><span class="p">},</span><span class="x">
+        </span><span class="p">{</span><span class="x">
+            </span><span class="n">Name</span><span class="o">:</span><span class="x">   </span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"tag:app"</span><span class="p">),</span><span class="x">
+            </span><span class="n">Values</span><span class="o">:</span><span class="x"> </span><span class="p">[]</span><span class="o">*</span><span class="kt">string</span><span class="p">{</span><span class="n">aws</span><span class="o">.</span><span class="n">String</span><span class="p">(</span><span class="s">"cucumber"</span><span class="p">)},</span><span class="x">
+        </span><span class="p">},</span><span class="x">
+    </span><span class="p">},</span><span class="x">
+</span><span class="p">})</span><span class="x">
+
+</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="no">nil</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="n">currentInstances</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">countInstancesByResp</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span><span class="x">
+</span><span class="k">if</span><span class="x"> </span><span class="nb">len</span><span class="p">(</span><span class="n">currentInstances</span><span class="p">)</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="n">p</span><span class="o">.</span><span class="n">NodesNumber</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">steps</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="nb">append</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">step</span><span class="o">.</span><span class="n">ReconcileNodes</span><span class="p">{</span><span class="x">
+        </span><span class="n">EC2svc</span><span class="o">:</span><span class="x">        </span><span class="n">ec2Svc</span><span class="p">,</span><span class="x">
+        </span><span class="n">Tags</span><span class="o">:</span><span class="x">          </span><span class="n">p</span><span class="o">.</span><span class="n">Tags</span><span class="p">,</span><span class="x">
+        </span><span class="n">VpcID</span><span class="o">:</span><span class="x">         </span><span class="n">vpcID</span><span class="p">,</span><span class="x">
+        </span><span class="n">SubnetID</span><span class="o">:</span><span class="x">      </span><span class="n">subnetID</span><span class="p">,</span><span class="x">
+        </span><span class="n">CurrentNumber</span><span class="o">:</span><span class="x"> </span><span class="nb">len</span><span class="p">(</span><span class="n">currentInstances</span><span class="p">),</span><span class="x">
+        </span><span class="n">DesiredNumber</span><span class="o">:</span><span class="x"> </span><span class="n">p</span><span class="o">.</span><span class="n">NodesNumber</span><span class="p">,</span><span class="x">
+    </span><span class="p">})</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre></div></div>
+<p>The code checks if the number of running instances are equals to the desired
+one, if they are different it calls the <code class="highlighter-rouge">ReconcileNodes</code> procedure.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>This is it! It is a long article but there is code and a repository you can run!
+I am enthusiast about this pattern and the work exposed here because I think it
+makes it clear and I tried to keep the context as small as possible to stay
+focused on the workflow and the design.</p>
+
+<p>Let me know if you will end up using it! Or if you already do how it is going
+<a href="https://twitter.com/gianarb">@gianarb</a>.</p>
+
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var disqus_config = function () {
+    this.page.url = 'https://gianarb.it/blog/reactive-planning-and-reconciliation-in-go';
+    this.page.identifier = 'https://gianarb.it/blog/reactive-planning-and-reconciliation-in-go';
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://gianarbdeveloper.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+
+        <div class="footer text-center bg-dark text-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 small">
+                last update December 22, 2020 ·
+                <a href="https://twitter.com/gianarb" target="_blank">twitter.com/gianarb</a> ·
+                <a href="https://github.com/gianarb" target="_blank">github.com/gianarb</a> ·
+                <a href="https://twitch.tv/gianarb" target="_blank">twitch.tv/gianarb</a> ·
+                <a href="/atom.xml">Atom</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/dockerfile.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/go.min.js"></script>
+        <script src="/js/custom.js"></script>
+
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>
